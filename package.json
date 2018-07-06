@@ -7,14 +7,16 @@
     "test": "test"
   },
   "scripts": {
+    "combine-contracts": "combine-contracts InvestmentPool",
     "compile": "truffle compile",
-    "test": "truffle test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:sol": "solium -d .",
     "lint:sol:fix": "solium -d . --fix",
     "lint:all": "yarn lint && yarn lint:sol",
-    "lint:all:fix": "yarn lint:fix && yarn lint:sol:fix"
+    "lint:all:fix": "yarn lint:fix && yarn lint:sol:fix",
+    "migrate": "truffle migrate",
+    "test": "truffle test"
   },
   "repository": {
     "type": "git",
