@@ -3507,6 +3507,10 @@ onetime@^2.0.0:
   dependencies:
     mimic-fn "^1.0.0"
 
+openzeppelin-solidity@1.10.0:
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/openzeppelin-solidity/-/openzeppelin-solidity-1.10.0.tgz#d77eee6653f5958d051318a61ba0b436f92216c0"
+
 optionator@^0.8.2:
   version "0.8.2"
   resolved "https://registry.yarnpkg.com/optionator/-/optionator-0.8.2.tgz#364c5e409d3f4d6301d6c0b4c05bba50180aeb64"
@@ -4170,6 +4174,12 @@ safe-buffer@^5.0.1, safe-buffer@^5.1.0, safe-buffer@^5.1.1, safe-buffer@^5.1.2, 
 sax@^1.2.4:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/sax/-/sax-1.2.4.tgz#2816234e2378bddc4e5354fab5caa895df7100d9"
+
+"sc-library@github:MyWishPlatform/sc-library#0.6.0":
+  version "0.6.0"
+  resolved "https://codeload.github.com/MyWishPlatform/sc-library/tar.gz/d192e3d89f7b6955453efbff980b3016adb229f1"
+  dependencies:
+    openzeppelin-solidity "1.10.0"
 
 scrypt.js@0.2.0, scrypt.js@^0.2.0:
   version "0.2.0"

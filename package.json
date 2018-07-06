@@ -41,5 +41,9 @@
     "ganache-core": "^2.1.4",
     "solium": "^1.1.7",
     "truffle": "^4.1.13"
+  },
+  "dependencies": {
+    "openzeppelin-solidity": "1.10.0",
+    "sc-library": "github:MyWishPlatform/sc-library#0.6.0"
   }
 }
