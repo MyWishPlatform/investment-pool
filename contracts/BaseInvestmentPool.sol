@@ -57,7 +57,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
         emit SetInvestmentAddress(_investmentAddress);
     }
 
-    function finalize() public onlyOwner {
+    function finalize() public {
         require(!isFinalized, "pool is already finalized");
         _preValidateFinalization();
         investmentAddress.transfer(weiRaised);

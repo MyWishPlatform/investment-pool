@@ -60,12 +60,28 @@ contract InvestmentPool is SoftCappableInvestmentPool
         super._preValidateCancellation();
         require(softCapReached() && hasEnded(), "pool already reached soft cap before end time");
     }
-    //#if D_MIN_VALUE_WEI > 0
+    //#if D_MIN_VALUE_WEI || D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER || D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
 
     function _preValidateFinalization() internal {
         super._preValidateFinalization();
-        bool remainValue = hardCap.sub(weiRaised) < D_MIN_VALUE_WEI;
-        require(remainValue);
+        //#if D_MIN_VALUE_WEI > 0
+        require(hardCap.sub(weiRaised) < D_MIN_VALUE_WEI);
+        //#endif
+        //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER && D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
+        if (hardCapReached()) {
+            require(msg.sender == owner, "only owner can finalize after hardCap is reached");
+        } else {
+            require(msg.sender == owner, "only owner can finalize after softCap is reached");
+        }
+        //#elif D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER && !D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
+        if (hardCapReached()) {
+            require(msg.sender == owner, "only owner can finalize after hardCap is reached");
+        }
+        //#elif !D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER && D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
+        if (!hardCapReached()) {
+            require(msg.sender == owner, "only owner can finalize after softCap is reached");
+        }
+        //#endif
     }
     //#endif
 }
