@@ -3,7 +3,7 @@ pragma solidity ^0.4.23;
 import "./BaseInvestmentPool.sol";
 
 
-contract CappedInvestmentPool is BaseInvestmentPool {
+contract HardCappedInvestmentPool is BaseInvestmentPool {
     uint hardCap;
 
     constructor(uint _hardCap) public {
