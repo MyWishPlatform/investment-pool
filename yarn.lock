@@ -4179,9 +4179,9 @@ sax@^1.2.4:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/sax/-/sax-1.2.4.tgz#2816234e2378bddc4e5354fab5caa895df7100d9"
 
-"sc-library@github:MyWishPlatform/sc-library#0.6.0":
-  version "0.6.0"
-  resolved "https://codeload.github.com/MyWishPlatform/sc-library/tar.gz/d192e3d89f7b6955453efbff980b3016adb229f1"
+"sc-library@github:MyWishPlatform/sc-library#0.7.0":
+  version "0.7.0"
+  resolved "https://codeload.github.com/MyWishPlatform/sc-library/tar.gz/26b812c78b058da91551f0a2442f3f3d66249041"
   dependencies:
     openzeppelin-solidity "1.10.0"
 

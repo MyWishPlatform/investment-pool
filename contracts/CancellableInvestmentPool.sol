@@ -4,27 +4,28 @@ import "./BaseInvestmentPool.sol";
 
 
 contract CancellableInvestmentPool is BaseInvestmentPool {
-    bool public isCancelled;
-    event Cancelled();
+  bool public isCancelled;
 
-    function cancel() public onlyOwner {
-        require(!isCancelled, "pool is already cancelled");
-        _preValidateCancellation();
-        isCancelled = true;
-        emit Cancelled();
-    }
+  event Cancelled();
 
-    function _preValidateCancellation() internal {
-        require(!isFinalized, "pool is finalized");
-    }
+  function cancel() public onlyOwner {
+    require(!isCancelled, "pool is already cancelled");
+    _preValidateCancellation();
+    isCancelled = true;
+    emit Cancelled();
+  }
 
-    function _preValidateFinalization() internal {
-        super._preValidateFinalization();
-        require(!isCancelled, "pool is cancelled");
-    }
+  function _preValidateCancellation() internal {
+    require(!isFinalized, "pool is finalized");
+  }
 
-    function _preValidateInvest(address _beneficiary, uint _amount) internal {
-        super._preValidateInvest(_beneficiary, _amount);
-        require(!isCancelled, "contract is already cancelled");
-    }
+  function _preValidateFinalization() internal {
+    super._preValidateFinalization();
+    require(!isCancelled, "pool is cancelled");
+  }
+
+  function _preValidateInvest(address _beneficiary, uint _amount) internal {
+    super._preValidateInvest(_beneficiary, _amount);
+    require(!isCancelled, "contract is already cancelled");
+  }
 }

@@ -4,14 +4,14 @@ import "./BaseInvestmentPool.sol";
 
 
 contract MaxRestrictedInvestmentPool is BaseInvestmentPool {
-    uint public maxInvestment;
+  uint public maxInvestment;
 
-    constructor(uint _maxInvestment) public {
-        maxInvestment = _maxInvestment;
-    }
+  constructor(uint _maxInvestment) public {
+    maxInvestment = _maxInvestment;
+  }
 
-    function _preValidateInvest(address _beneficiary, uint _amount) internal {
-        super._preValidateInvest(_beneficiary, _amount);
-        require(_amount <= maxInvestment, "too high value");
-    }
+  function _preValidateInvest(address _beneficiary, uint _amount) internal {
+    super._preValidateInvest(_beneficiary, _amount);
+    require(_amount <= maxInvestment, "too high value");
+  }
 }
