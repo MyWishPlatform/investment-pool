@@ -979,6 +979,10 @@ bytewise@~1.1.0:
     bytewise-core "^1.2.2"
     typewise "^1.0.3"
 
+c-preprocessor@^0.2.12:
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/c-preprocessor/-/c-preprocessor-0.2.12.tgz#b92eb42835f7cc5d343e00e3017de2a9aaa611bf"
+
 cachedown@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/cachedown/-/cachedown-1.0.0.tgz#d43f036e4510696b31246d7db31ebf0f7ac32d15"

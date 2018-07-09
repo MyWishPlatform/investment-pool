@@ -8,7 +8,7 @@
   },
   "scripts": {
     "combine-contracts": "combine-contracts InvestmentPool",
-    "compile": "truffle compile",
+    "compile": "./scripts/compile.sh",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:sol": "solium -d .",
@@ -16,7 +16,7 @@
     "lint:all": "yarn lint && yarn lint:sol",
     "lint:all:fix": "yarn lint:fix && yarn lint:sol:fix",
     "migrate": "truffle migrate",
-    "test": "truffle test"
+    "test": "./scripts/test.sh"
   },
   "repository": {
     "type": "git",
@@ -34,6 +34,7 @@
   },
   "homepage": "https://github.com/MyWishPlatform/investment-pool#readme",
   "devDependencies": {
+    "c-preprocessor": "^0.2.12",
     "eslint": "^5.0.1",
     "eslint-config-standard": "^11.0.0",
     "eslint-plugin-import": "^2.13.0",

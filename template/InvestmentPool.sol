@@ -4,9 +4,19 @@ import "./CappedInvestmentPool.sol";
 import "./TimedInvestmentPool.sol";
 import "./CancellableInvestmentPool.sol";
 import "./RefundableInvestmentPool.sol";
+//#if D_WHITELIST
+import "./WhitelistedInvestmentPool.sol";
+//#endif
 
 
-contract InvestmentPool is RefundableInvestmentPool, CappedInvestmentPool, TimedInvestmentPool, CancellableInvestmentPool {
+contract InvestmentPool is RefundableInvestmentPool
+, CappedInvestmentPool
+, TimedInvestmentPool
+, CancellableInvestmentPool
+//#if D_WHITELIST
+, WhitelistedInvestmentPool
+//#endif
+{
     constructor(
         address _owner,
         uint _startTime,
