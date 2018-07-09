@@ -13,4 +13,9 @@ contract RefundableInvestmentPool is BaseInvestmentPool {
     function softCapReached() public view returns (bool) {
         return weiRaised >= softCap;
     }
+
+    function _preValidateFinalization() internal {
+        super._preValidateFinalization();
+        require(softCapReached(), 'soft cap did not reached yet');
+    }
 }

@@ -7,6 +7,12 @@ import "./RefundableInvestmentPool.sol";
 //#if D_WHITELIST
 import "./WhitelistedInvestmentPool.sol";
 //#endif
+//#if D_MIN_VALUE_WEI > 0
+import "./MinRestrictedInvestmentPool.sol";
+//#endif
+//#if D_MAX_VALUE_WEI > 0
+import "./MaxRestrictedInvestmentPool.sol";
+//#endif
 
 
 contract InvestmentPool is RefundableInvestmentPool
@@ -15,6 +21,12 @@ contract InvestmentPool is RefundableInvestmentPool
 , CancellableInvestmentPool
 //#if D_WHITELIST
 , WhitelistedInvestmentPool
+//#endif
+//#if D_MIN_VALUE_WEI > 0
+, MinRestrictedInvestmentPool
+//#endif
+//#if D_MAX_VALUE_WEI > 0
+, MaxRestrictedInvestmentPool
 //#endif
 {
     constructor(
@@ -26,13 +38,26 @@ contract InvestmentPool is RefundableInvestmentPool
         RefundableInvestmentPool(D_SOFT_CAP_WEI)
         CappedInvestmentPool(D_HARD_CAP_WEI)
         TimedInvestmentPool(D_START_TIME, D_END_TIME)
-        CancellableInvestmentPool()
+        //#if D_MIN_VALUE_WEI > 0
+        MinRestrictedInvestmentPool(D_MIN_VALUE_WEI)
+        //#endif
+        //#if D_MAX_VALUE_WEI > 0
+        MaxRestrictedInvestmentPool(D_MAX_VALUE_WEI)
+        //#endif
     {
         require(softCap < hardCap, "soft cap should be less than hard cap");
     }
 
-    function cancel() public onlyOwner {
+    function _preValidateCancellation() internal {
+        super._preValidateCancellation();
         require(softCapReached() && hasEnded(), "pool already reached soft cap before end time");
-        super.cancel();
     }
+    //#if D_MIN_VALUE_WEI > 0
+
+    function _preValidateFinalization() internal {
+        super._preValidateFinalization();
+        bool remainValue = hardCap.sub(weiRaised) < D_MIN_VALUE_WEI;
+        require(remainValue);
+    }
+    //#endif
 }

@@ -9,14 +9,18 @@ contract CancellableInvestmentPool is BaseInvestmentPool {
 
     function cancel() public onlyOwner {
         require(!isCancelled, "pool is already cancelled");
-        require(!isFinalized, "pool is finalized");
+        _preValidateCancellation();
         isCancelled = true;
         emit Cancelled();
     }
 
-    function finalize() public {
+    function _preValidateCancellation() internal {
+        require(!isFinalized, "pool is finalized");
+    }
+
+    function _preValidateFinalization() internal {
+        super._preValidateFinalization();
         require(!isCancelled, "pool is cancelled");
-        super.finalize();
     }
 
     function _preValidateInvest(address _beneficiary, uint _amount) internal {

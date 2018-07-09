@@ -57,6 +57,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
 
     function finalize() public onlyOwner {
         require(!isFinalized, "pool is already finalized");
+        _preValidateFinalization();
         investmentAddress.transfer(weiRaised);
         isFinalized = true;
         emit Finalized();
@@ -87,5 +88,9 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
         require(_beneficiary != address(0), "cannot invest from null address");
         require(investmentAddress != address(0), "investment address did not set");
         require(!isFinalized, "contract is already finalized");
+    }
+
+    function _preValidateFinalization() internal {
+        // override
     }
 }
