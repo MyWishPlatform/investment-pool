@@ -1,8 +1,8 @@
 pragma solidity ^0.4.23;
 
 import "./HardCappedInvestmentPool.sol";
+import "./SoftCappedInvestmentPool.sol";
 import "./CancellableInvestmentPool.sol";
-import "./SoftCappableInvestmentPool.sol";
 //#if D_WHITELIST
 import "./WhitelistedInvestmentPool.sol";
 //#endif
@@ -19,7 +19,7 @@ import "./TimedInvestmentPool.sol";
 //#endif
 
 
-contract InvestmentPool is SoftCappableInvestmentPool
+contract InvestmentPool is SoftCappedInvestmentPool
 , HardCappedInvestmentPool
 , CancellableInvestmentPool
 //#if D_WHITELIST
@@ -43,7 +43,7 @@ contract InvestmentPool is SoftCappableInvestmentPool
     )
         public
         BaseInvestmentPool(_owner, _investmentAddress)
-        SoftCappableInvestmentPool(D_SOFT_CAP_WEI)
+        SoftCappedInvestmentPool(D_SOFT_CAP_WEI)
         HardCappedInvestmentPool(D_HARD_CAP_WEI)
         TimedInvestmentPool(D_START_TIME, D_END_TIME)
         //#if D_MIN_VALUE_WEI > 0
