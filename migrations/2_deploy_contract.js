@@ -1,13 +1,9 @@
+const Token = artifacts.require('./TestToken.sol');
+const Crowdsale = artifacts.require('./TestCrowdsale.sol');
 const InvestmentPool = artifacts.require('./InvestmentPool.sol');
 
-module.exports = function (deployer, accounts) {
-    deployer.deploy(
-        InvestmentPool,
-        accounts[0],
-        1530896296,
-        1530996296,
-        10000000000000000,
-        20000000000000000,
-        accounts[1]
-    );
+module.exports = function (deployer, network, accounts) {
+    return deployer.deploy(Token)
+        .then(token => deployer.deploy(Crowdsale, 1000, accounts[1], token.address)
+            .then(crowdsale => deployer.deploy(InvestmentPool, accounts[0], crowdsale.address)));
 };

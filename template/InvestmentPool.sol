@@ -19,20 +19,16 @@ contract InvestmentPool is RefundableInvestmentPool
 {
     constructor(
         address _owner,
-        uint _startTime,
-        uint _endTime,
-        uint _softCap,
-        uint _hardCap,
         address _investmentAddress
     )
         public
         BaseInvestmentPool(_owner, _investmentAddress)
-        RefundableInvestmentPool(_softCap)
-        CappedInvestmentPool(_hardCap)
-        TimedInvestmentPool(_startTime, _endTime)
+        RefundableInvestmentPool(D_SOFT_CAP_WEI)
+        CappedInvestmentPool(D_HARD_CAP_WEI)
+        TimedInvestmentPool(D_START_TIME, D_END_TIME)
         CancellableInvestmentPool()
     {
-        require(_softCap < hardCap, "soft cap should be less than hard cap");
+        require(softCap < hardCap, "soft cap should be less than hard cap");
     }
 
     function cancel() public onlyOwner {
