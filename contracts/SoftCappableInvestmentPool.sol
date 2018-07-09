@@ -3,7 +3,7 @@ pragma solidity ^0.4.23;
 import "./BaseInvestmentPool.sol";
 
 
-contract RefundableInvestmentPool is BaseInvestmentPool {
+contract SoftCappableInvestmentPool is BaseInvestmentPool {
     uint softCap;
 
     constructor(uint _softCap) public {
