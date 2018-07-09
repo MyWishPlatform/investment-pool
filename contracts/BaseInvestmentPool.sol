@@ -19,6 +19,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     event Finalized();
     event Invest(address indexed investor, uint amount);
     event WithdrawTokens(address indexed investor, uint amount);
+    event SetInvestmentAddress(address investmentAddress);
 
     modifier onlyInvestor() {
         require(investments[msg.sender] != 0, "you are not investor");
@@ -53,6 +54,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     function setInvestmentAddress(address _investmentAddress) public onlyOwner {
         require(investmentAddress == address(0), "investment address already set");
         investmentAddress = _investmentAddress;
+        emit SetInvestmentAddress(_investmentAddress);
     }
 
     function finalize() public onlyOwner {
@@ -68,6 +70,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
         uint tokenAmount = _getTokenAmount(_token, investor);
         require(tokenAmount != 0, "contract have no tokens for you");
         _transferTokens(_token, investor, tokenAmount);
+        emit WithdrawTokens(investor, tokenAmount);
     }
 
     function _getTokenAmount(ERC20Basic _token, address _investor) internal view returns (uint) {
@@ -81,7 +84,6 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
         _token.transfer(_investor, _amount);
         tokensWithdrawnByInvestor[_investor] = tokensWithdrawnByInvestor[_investor].add(_amount);
         tokensWithdrawn = tokensWithdrawn.add(_amount);
-        emit WithdrawTokens(_investor, _amount);
     }
 
     function _preValidateInvest(address _beneficiary, uint) internal {
