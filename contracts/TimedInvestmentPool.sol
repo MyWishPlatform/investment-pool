@@ -20,4 +20,10 @@ contract TimedInvestmentPool is BaseInvestmentPool {
     function hasEnded() public view returns (bool) {
         return now > endTime;
     }
+
+    function _preValidateInvest(address _beneficiary, uint _amount) internal {
+        super._preValidateInvest(_beneficiary, _amount);
+        require(hasStarted(), "contract is not yet started");
+        require(!hasEnded(), "contract is already ended");
+    }
 }

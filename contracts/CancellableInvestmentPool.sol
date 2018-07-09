@@ -18,4 +18,9 @@ contract CancellableInvestmentPool is BaseInvestmentPool {
         require(!isCancelled, "pool is cancelled");
         super.finalize();
     }
+
+    function _preValidateInvest(address _beneficiary, uint _amount) internal {
+        super._preValidateInvest(_beneficiary, _amount);
+        require(!isCancelled, "contract is already cancelled");
+    }
 }
