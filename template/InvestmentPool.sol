@@ -1,7 +1,6 @@
 pragma solidity ^0.4.23;
 
 import "./HardCappedInvestmentPool.sol";
-import "./TimedInvestmentPool.sol";
 import "./CancellableInvestmentPool.sol";
 import "./RefundableInvestmentPool.sol";
 //#if D_WHITELIST
@@ -13,11 +12,15 @@ import "./MinRestrictedInvestmentPool.sol";
 //#if D_MAX_VALUE_WEI > 0
 import "./MaxRestrictedInvestmentPool.sol";
 //#endif
+//#if D_CAN_CHANGE_TIMES
+import "./ChangeableTimedInvestmentPool.sol";
+//#else
+import "./TimedInvestmentPool.sol";
+//#endif
 
 
 contract InvestmentPool is RefundableInvestmentPool
 , HardCappedInvestmentPool
-, TimedInvestmentPool
 , CancellableInvestmentPool
 //#if D_WHITELIST
 , WhitelistedInvestmentPool
@@ -27,6 +30,11 @@ contract InvestmentPool is RefundableInvestmentPool
 //#endif
 //#if D_MAX_VALUE_WEI > 0
 , MaxRestrictedInvestmentPool
+//#endif
+//#if D_CAN_CHANGE_TIMES
+, ChangeableTimedInvestmentPool
+//#else
+, TimedInvestmentPool
 //#endif
 {
     constructor(
