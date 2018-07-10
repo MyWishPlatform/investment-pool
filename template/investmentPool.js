@@ -42,6 +42,17 @@ contract('InvestmentPool', function (accounts) {
         return InvestmentPool.new(OWNER, 0, 0);
     };
 
+    const createInvestmentPoolWithICO = async () => {
+        const token = await Token.new();
+        const crowdsale = await Crowdsale.new(RATE, ICO_WALLET, token.address);
+        return InvestmentPool.new(OWNER, crowdsale.address, 0);
+    };
+
+    const createInvestmentPoolWithToken = async () => {
+        const token = await Token.new();
+        return InvestmentPool.new(OWNER, 0, token.address);
+    };
+
     const createInvestmentPoolWithICOAndToken = async () => {
         const token = await Token.new();
         const crowdsale = await Crowdsale.new(RATE, ICO_WALLET, token.address);
@@ -58,20 +69,36 @@ contract('InvestmentPool', function (accounts) {
         await revert(snapshotId);
     });
 
-    it('#1 construct ivnestment pool', async () => {
+    it('#1 construct investment pool', async () => {
         const investmentPool = await createInvestmentPool();
         investmentPool.address.should.have.length(42);
     });
 
     it('#2 construct investment pool with ICO', async () => {
-        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const investmentPool = await createInvestmentPoolWithICO();
         investmentPool.address.should.have.length(42);
         const crowdsale = Crowdsale.at(await investmentPool.investmentAddress());
         crowdsale.address.should.have.length(42);
         (await crowdsale.token()).should.have.length(42);
     });
 
-    it('#3 invest before start and after end', async () => {
+    it('#3 construct investment pool with Token', async () => {
+        const investmentPool = await createInvestmentPoolWithToken();
+        investmentPool.address.should.have.length(42);
+        const token = Token.at(await investmentPool.tokenAddress());
+        token.address.should.have.length(42);
+    });
+
+    it('#4 construct investment pool with ICO and Token', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        investmentPool.address.should.have.length(42);
+        const crowdsale = Crowdsale.at(await investmentPool.investmentAddress());
+        crowdsale.address.should.have.length(42);
+        const token = Crowdsale.at(await investmentPool.tokenAddress());
+        token.address.should.have.length(42);
+    });
+
+    it('#5 invest before start and after end', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
 
         //#if D_WHITELIST
@@ -96,7 +123,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
     });
 
-    it('#4 invest in time', async () => {
+    it('#6 invest in time', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const crowdsale = Crowdsale.at(await investmentPool.investmentAddress());
         const token = Token.at(await crowdsale.token());
@@ -125,13 +152,15 @@ contract('InvestmentPool', function (accounts) {
     });
 
     //#if D_MAX_VALUE_WEI != 0 || D_MIN_VALUE_WEI != 0
-    it('#5 check min & max', async () => {
+    it('#7 check min & max', async () => {
         const investmentPool = await createInvestmentPool();
-        // await investmentPool
+        await investmentPool;
     });
     //#endif
 
-    it('#6 invest more than hardCap', async () => {});
+    it('#8 invest more than hardCap', async () => {
+    });
 
-    it('#7 check successfully finalization', async () => {});
+    it('#9 check successfully finalization', async () => {
+    });
 });
