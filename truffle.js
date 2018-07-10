@@ -5,7 +5,7 @@ module.exports = {
         ganache: {
             network_id: '*', // eslint-disable-line camelcase
             provider: ganache.provider({
-                total_accounts: 5, // eslint-disable-line camelcase
+                total_accounts: 6, // eslint-disable-line camelcase
                 default_balance_ether: 1000000000, // eslint-disable-line camelcase
                 mnemonic: 'mywish',
                 time: new Date('2017-10-10T15:00:00Z'),

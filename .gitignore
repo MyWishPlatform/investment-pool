@@ -6,3 +6,4 @@ build/
 coverage/
 yarn-error.log
 contracts/InvestmentPool.sol
+test/investmentPool.js

@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
-node_modules/.bin/truffle test
+CONFIG=$1
+CONFIG="${CONFIG:-investment-pool-config.json}"
+source $(dirname "$0")/test-template.sh "$CONFIG"
