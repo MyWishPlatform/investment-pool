@@ -12,6 +12,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   mapping(address => uint) public tokensWithdrawnByInvestor;
   mapping(address => uint) public investments;
   address public investmentAddress;
+  address public tokenAddress;
   uint public tokensWithdrawn;
   uint public rewardWithdrawn;
   uint public rewardPermille;
@@ -23,6 +24,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   event WithdrawTokens(address indexed investor, uint amount);
   event WithdrawReward(uint amount);
   event SetInvestmentAddress(address investmentAddress);
+  event SetTokenAddress(address tokenAddress);
 
   modifier onlyInvestor() {
     require(investments[msg.sender] != 0, "you are not investor");
@@ -32,6 +34,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   constructor(
     address _owner,
     address _investmentAddress,
+    address _tokenAddress,
     uint _rewardPermille
   )
     public
@@ -40,6 +43,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     require(_rewardPermille < 1000, "rate should be less than 1000");
     owner = _owner;
     investmentAddress = _investmentAddress;
+    tokenAddress = _tokenAddress;
     rewardPermille = _rewardPermille;
   }
 
@@ -48,7 +52,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   }
 
   function tokenFallback(address, uint, bytes) public {
-    // apply tokens from ICO
+    require(msg.sender == tokenAddress, "allowed receive tokens only from target ICO");
   }
 
   function invest(address _beneficiary) public payable {
@@ -65,6 +69,12 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     emit SetInvestmentAddress(_investmentAddress);
   }
 
+  function setTokenAddress(address _tokenAddress) public onlyOwner {
+    require(tokenAddress == address(0), "token address already set");
+    tokenAddress = _tokenAddress;
+    emit SetTokenAddress(_tokenAddress);
+  }
+
   function finalize() public {
     require(!isFinalized, "pool is already finalized");
     _preValidateFinalization();
@@ -73,49 +83,51 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     emit Finalized();
   }
 
-  function forwardReward(ERC20Basic _token) public onlyOwner {
+  function forwardReward() public onlyOwner {
     require(isFinalized, "contract not finalized yet");
-    uint tokenAmount = _getRewardTokenAmount(_token);
+    uint tokenAmount = _getRewardTokenAmount();
     require(tokenAmount != 0, "contract have no tokens for you");
-    _transferTokens(_token, owner, tokenAmount);
+    _transferTokens(owner, tokenAmount);
     emit WithdrawReward(tokenAmount);
   }
 
-  function withdrawTokens(ERC20Basic _token) public onlyInvestor {
+  function withdrawTokens() public onlyInvestor {
     address investor = msg.sender;
-    uint tokenAmount = _getInvestorTokenAmount(_token, investor);
+    uint tokenAmount = _getInvestorTokenAmount(investor);
     require(tokenAmount != 0, "contract have no tokens for you");
-    _transferTokens(_token, investor, tokenAmount);
+    _transferTokens(investor, tokenAmount);
     tokensWithdrawnByInvestor[investor] = tokensWithdrawnByInvestor[investor].add(tokenAmount);
     emit WithdrawTokens(investor, tokenAmount);
   }
 
-  function _getRewardTokenAmount(ERC20Basic _token) internal view returns (uint) {
-    uint tokenRaised = _token.balanceOf(this).add(tokensWithdrawn);
+  function _getRewardTokenAmount() internal view returns (uint) {
+    uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
     uint tokenAmount = tokenRaised * rewardPermille / 1000;
     return tokenAmount.sub(rewardWithdrawn);
   }
 
-  function _getInvestorTokenAmount(ERC20Basic _token, address _investor) internal view returns (uint) {
-    uint tokenRaised = _token.balanceOf(this).add(tokensWithdrawn);
+  function _getInvestorTokenAmount(address _investor) internal view returns (uint) {
+    uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
     uint investorsTokens = tokenRaised.mul(1000 - rewardPermille).div(1000);
     uint investedAmount = investments[_investor];
     uint tokenAmount = investedAmount.mul(investorsTokens).div(weiRaised);
     return tokenAmount.sub(tokensWithdrawnByInvestor[_investor]);
   }
 
-  function _transferTokens(ERC20Basic _token, address _investor, uint _amount) internal {
-    _token.transfer(_investor, _amount);
+  function _transferTokens( address _investor, uint _amount) internal {
+    ERC20Basic(tokenAddress).transfer(_investor, _amount);
     tokensWithdrawn = tokensWithdrawn.add(_amount);
   }
 
   function _preValidateInvest(address _beneficiary, uint) internal {
     require(_beneficiary != address(0), "cannot invest from null address");
     require(investmentAddress != address(0), "investment address did not set");
+    require(tokenAddress != address(0), "token address did not set");
     require(!isFinalized, "contract is already finalized");
   }
 
   function _preValidateFinalization() internal {
     require(investmentAddress != address(0), "investment address did not set");
+    require(tokenAddress != address(0), "token address did not set");
   }
 }

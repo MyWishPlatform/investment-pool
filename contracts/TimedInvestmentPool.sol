@@ -18,7 +18,7 @@ contract TimedInvestmentPool is BaseInvestmentPool {
   }
 
   function hasEnded() public view returns (bool) {
-    return now > endTime;
+    return now >= endTime;
   }
 
   function _preValidateInvest(address _beneficiary, uint _amount) internal {

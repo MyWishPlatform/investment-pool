@@ -38,10 +38,11 @@ contract InvestmentPool is
 {
   constructor(
     address _owner,
-    address _investmentAddress
+    address _investmentAddress,
+    address _tokenAddress
   )
     public
-    BaseInvestmentPool(_owner, _investmentAddress, D_REWARD_PERMILLE)
+    BaseInvestmentPool(_owner, _investmentAddress, _tokenAddress, D_REWARD_PERMILLE)
     SoftCappedInvestmentPool(D_SOFT_CAP_WEI)
     HardCappedInvestmentPool(D_HARD_CAP_WEI)
     TimedInvestmentPool(D_START_TIME, D_END_TIME)
