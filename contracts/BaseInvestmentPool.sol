@@ -12,13 +12,17 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   mapping(address => uint) public tokensWithdrawnByInvestor;
   mapping(address => uint) public investments;
   address public investmentAddress;
+  address public rewardAddress;
   uint public tokensWithdrawn;
-  bool public isFinalized;
+  uint public rewardWithdrawn;
+  uint public rewardPermille;
   uint public weiRaised;
+  bool public isFinalized;
 
   event Finalized();
   event Invest(address indexed investor, uint amount);
   event WithdrawTokens(address indexed investor, uint amount);
+  event WithdrawReward(uint amount);
   event SetInvestmentAddress(address investmentAddress);
 
   modifier onlyInvestor() {
@@ -28,11 +32,19 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
 
   constructor(
     address _owner,
-    address _investmentAddress
-  ) public {
+    address _investmentAddress,
+    uint _rewardPermille,
+    address _rewardAddress
+  )
+    public
+  {
     require(_owner != address(0), "owner address should not be null");
+    require(_rewardAddress != address(0), "reward address should not be null");
+    require(_rewardPermille < 1000, "rate should be less than 1000");
     owner = _owner;
     investmentAddress = _investmentAddress;
+    rewardPermille = _rewardPermille;
+    rewardAddress = _rewardAddress;
   }
 
   function() external payable {
@@ -65,24 +77,39 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     emit Finalized();
   }
 
+  function forwardReward(ERC20Basic _token) onlyOwner {
+    require(isFinalized, 'contract not finalized yet');
+    uint tokenAmount = _getRewardTokenAmount(_token);
+    require(tokenAmount != 0, "contract have no tokens for you");
+    _transferTokens(_token, rewardAddress, tokenAmount);
+    emit WithdrawReward(tokenAmount);
+  }
+
   function withdrawTokens(ERC20Basic _token) public onlyInvestor {
     address investor = msg.sender;
-    uint tokenAmount = _getTokenAmount(_token, investor);
+    uint tokenAmount = _getInvestorTokenAmount(_token, investor);
     require(tokenAmount != 0, "contract have no tokens for you");
     _transferTokens(_token, investor, tokenAmount);
+    tokensWithdrawnByInvestor[investor] = tokensWithdrawnByInvestor[investor].add(tokenAmount);
     emit WithdrawTokens(investor, tokenAmount);
   }
 
-  function _getTokenAmount(ERC20Basic _token, address _investor) internal view returns (uint) {
+  function _getRewardTokenAmount(ERC20Basic _token) internal view returns (uint) {
     uint tokenRaised = _token.balanceOf(this).add(tokensWithdrawn);
+    uint tokenAmount = tokenRaised * rewardPermille / 1000;
+    return tokenAmount.sub(rewardWithdrawn);
+  }
+
+  function _getInvestorTokenAmount(ERC20Basic _token, address _investor) internal view returns (uint) {
+    uint tokenRaised = _token.balanceOf(this).add(tokensWithdrawn);
+    uint investorsTokens = tokenRaised.mul(1000 - rewardPermille).div(1000);
     uint investedAmount = investments[_investor];
-    uint tokenAmount = investedAmount.mul(tokenRaised).div(weiRaised);
+    uint tokenAmount = investedAmount.mul(investorsTokens).div(weiRaised);
     return tokenAmount.sub(tokensWithdrawnByInvestor[_investor]);
   }
 
   function _transferTokens(ERC20Basic _token, address _investor, uint _amount) internal {
     _token.transfer(_investor, _amount);
-    tokensWithdrawnByInvestor[_investor] = tokensWithdrawnByInvestor[_investor].add(_amount);
     tokensWithdrawn = tokensWithdrawn.add(_amount);
   }
 
