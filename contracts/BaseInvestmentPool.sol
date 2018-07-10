@@ -12,7 +12,6 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   mapping(address => uint) public tokensWithdrawnByInvestor;
   mapping(address => uint) public investments;
   address public investmentAddress;
-  address public rewardAddress;
   uint public tokensWithdrawn;
   uint public rewardWithdrawn;
   uint public rewardPermille;
@@ -33,18 +32,15 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   constructor(
     address _owner,
     address _investmentAddress,
-    uint _rewardPermille,
-    address _rewardAddress
+    uint _rewardPermille
   )
     public
   {
     require(_owner != address(0), "owner address should not be null");
-    require(_rewardAddress != address(0), "reward address should not be null");
     require(_rewardPermille < 1000, "rate should be less than 1000");
     owner = _owner;
     investmentAddress = _investmentAddress;
     rewardPermille = _rewardPermille;
-    rewardAddress = _rewardAddress;
   }
 
   function() external payable {
@@ -77,11 +73,11 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     emit Finalized();
   }
 
-  function forwardReward(ERC20Basic _token) onlyOwner {
+  function forwardReward(ERC20Basic _token) public onlyOwner {
     require(isFinalized, 'contract not finalized yet');
     uint tokenAmount = _getRewardTokenAmount(_token);
     require(tokenAmount != 0, "contract have no tokens for you");
-    _transferTokens(_token, rewardAddress, tokenAmount);
+    _transferTokens(_token, owner, tokenAmount);
     emit WithdrawReward(tokenAmount);
   }
 
