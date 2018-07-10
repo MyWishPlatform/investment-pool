@@ -26,4 +26,9 @@ contract TimedInvestmentPool is BaseInvestmentPool {
     require(hasStarted(), "contract is not yet started");
     require(!hasEnded(), "contract is already ended");
   }
+
+  function _preValidateFinalization() internal {
+    super._preValidateFinalization();
+    require(!hasEnded(), "time is out");
+  }
 }

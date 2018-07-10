@@ -74,7 +74,7 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   }
 
   function forwardReward(ERC20Basic _token) public onlyOwner {
-    require(isFinalized, 'contract not finalized yet');
+    require(isFinalized, "contract not finalized yet");
     uint tokenAmount = _getRewardTokenAmount(_token);
     require(tokenAmount != 0, "contract have no tokens for you");
     _transferTokens(_token, owner, tokenAmount);
@@ -116,6 +116,6 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
   }
 
   function _preValidateFinalization() internal {
-    // override
+    require(investmentAddress != address(0), "investment address did not set");
   }
 }
