@@ -1,5 +1,5 @@
 const BigNumber = web3.BigNumber;
-
+const rand = require('random-seed').create(123);
 require('chai')
     .use(require('chai-bignumber')(BigNumber))
     .use(require('chai-as-promised'))
@@ -18,8 +18,12 @@ const START_TIME = D_START_TIME; // eslint-disable-line no-undef
 const END_TIME = D_END_TIME; // eslint-disable-line no-undef
 const SOFT_CAP_WEI = new BigNumber('D_SOFT_CAP_WEI');
 const HARD_CAP_WEI = new BigNumber('D_HARD_CAP_WEI');
+//#ifdef D_MIN_VALUE_WEI
 const MIN_VALUE_WEI = new BigNumber('D_MIN_VALUE_WEI');
+//#endif
+//#ifdef D_MAX_VALUE_WEI
 const MAX_VALUE_WEI = new BigNumber('D_MAX_VALUE_WEI');
+//#endif
 const REWARD_PERMILLE = D_REWARD_PERMILLE; // eslint-disable-line no-undef
 
 const SECOND = 1;
@@ -30,12 +34,22 @@ const DAY = 24 * HOUR;
 contract('InvestmentPool', function (accounts) {
     const DEPLOYER = accounts[0];
     const OWNER = accounts[1];
-    const INVESTOR_1 = accounts[2];
-    const INVESTOR_2 = accounts[3];
-    const INVESTOR_3 = accounts[4];
+    const INVESTORS = [accounts[2], accounts[3], accounts[4]];
 
     let now;
     let snapshotId;
+
+    const getRandomInvestor = () => {
+        return INVESTORS[rand(INVESTORS.length)];
+    };
+
+    const getInvestorTokenAmount = (investedAmount, allInvested, allTokenAmount) => {
+        return investedAmount.div(allInvested).mul(allTokenAmount.sub(getRewardTokenAmount(allTokenAmount))).floor();
+    };
+
+    const getRewardTokenAmount = (allAmount) => {
+        return allAmount.mul(REWARD_PERMILLE).div(1000).floor();
+    };
 
     const createInvestmentPool = async () => {
         return InvestmentPool.new(OWNER, 0, 0);
@@ -63,11 +77,11 @@ contract('InvestmentPool', function (accounts) {
         //#if D_SOFT_CAP_WEI == 0
         wei = HARD_CAP_WEI.div(2).floor();
         //#endif
-        //#if D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
+        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
         wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
-        //#elif D_MAX_VALUE_WEI != 0
+        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
         wei = BigNumber.min(wei, MAX_VALUE_WEI);
-        //#elif D_MIN_VALUE_WEI != 0
+        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
         wei = BigNumber.max(wei, MIN_VALUE_WEI);
         //#endif
         return wei;
@@ -123,42 +137,42 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
 
         //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTOR_1, { from: OWNER });
+        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
         //#endif
 
         const wei = await getSimpleWeiAmount();
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
         await timeTo(END_TIME);
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
     });
 
     it('#6 invest in time', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
 
         //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTOR_1, { from: OWNER });
+        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
         //#endif
 
         const wei = await getSimpleWeiAmount();
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
         await timeTo(START_TIME);
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei });
-        await investmentPool.investments(INVESTOR_1).should.eventually.be.bignumber.equal(wei);
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei });
+        await investmentPool.investments(INVESTORS[0]).should.eventually.be.bignumber.equal(wei);
     });
 
-    //#if D_MAX_VALUE_WEI != 0 || D_MIN_VALUE_WEI != 0
+    //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0 || defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
     it('#7 check min & max', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
         //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTOR_1, { from: OWNER });
+        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
         //#endif
-        //#if D_MIN_VALUE_WEI != 0
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: MIN_VALUE_WEI.sub(1) })
+        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: MIN_VALUE_WEI.sub(1) })
             .should.eventually.be.rejected;
         //#endif
-        //#if D_MAX_VALUE_WEI != 0
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: MAX_VALUE_WEI.add(1) })
+        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: MAX_VALUE_WEI.add(1) })
             .should.eventually.be.rejected;
         //#endif
     });
@@ -168,66 +182,123 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPool();
         await timeTo(START_TIME);
         //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTOR_1, { from: OWNER });
+        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
         //#endif
 
         const wei = await getSimpleWeiAmount();
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
 
         const crowdsale = await Crowdsale.new(RATE);
         await investmentPool.setInvestmentAddress(crowdsale.address, { from: OWNER });
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
 
         const tokenAddress = await crowdsale.token();
         await investmentPool.setTokenAddress(tokenAddress, { from: OWNER });
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei });
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei });
     });
-    //#if D_MAX_VALUE_WEI > D_HARD_CAP_WEI
+    //#if defined(D_MAX_VALUE_WEI) && (D_MAX_VALUE_WEI > D_HARD_CAP_WEI)
 
     it('#9 cannot invest more than hardCap', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
         //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTOR_1, { from: OWNER });
+        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
         //#endif
-        await investmentPool.sendTransaction({ from: INVESTOR_1, value: HARD_CAP_WEI.add(web3.toWei(1, 'ether')) })
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: HARD_CAP_WEI.add(web3.toWei(1, 'ether')) })
             .should.eventually.be.rejected;
     });
     //#endif
-    //#if (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#10 check successfully finalization', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
         //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTOR_3, { from: OWNER });
+        await investmentPool.addAddressToWhitelist(INVESTORS[2], { from: OWNER });
         //#endif
 
         // reach hard cap
         let wei = HARD_CAP_WEI;
-        //#if D_MAX_VALUE_WEI != 0
+        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
         wei = MAX_VALUE_WEI;
 
         for (let i = 0; i < HARD_CAP_WEI.div(wei).floor(); i++) {
-            await investmentPool.sendTransaction({ from: INVESTOR_3, value: wei });
+            await investmentPool.sendTransaction({ from: INVESTORS[2], value: wei });
         }
 
         const remainWeiToHardCap = HARD_CAP_WEI.sub(await investmentPool.weiRaised());
         if (remainWeiToHardCap.comparedTo(0) > 0) {
-            //#if D_MIN_VALUE_WEI != 0
+            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
             if (remainWeiToHardCap.comparedTo(MIN_VALUE_WEI) >= 0) {
-                await investmentPool.sendTransaction({ from: INVESTOR_3, value: remainWeiToHardCap });
+                await investmentPool.sendTransaction({ from: INVESTORS[2], value: remainWeiToHardCap });
             }
             //#else
-            await investmentPool.sendTransaction({ from: INVESTOR_3, value: remainWeiToHardCap });
+            await investmentPool.sendTransaction({ from: INVESTORS[2], value: remainWeiToHardCap });
             //#endif
         }
         //#else
-        await investmentPool.sendTransaction({ from: INVESTOR_3, value: wei });
+        await investmentPool.sendTransaction({ from: INVESTORS[2], value: wei });
         //#endif
 
         // finalize
         await investmentPool.finalize({ from: OWNER });
+        await token.balanceOf(investmentPool.address).should.eventually.be.bignumber.not.negative;
+    });
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
+
+    it('#11 check withdraw tokens after finalize', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const token = Token.at(await investmentPool.tokenAddress());
+        await timeTo(START_TIME);
+        //#if D_WHITELIST
+        for (let i = 0; i < INVESTORS.length; i++) {
+            await investmentPool.addAddressToWhitelist(INVESTORS[i], { from: OWNER });
+        }
+        //#endif
+
+        // reach hard cap
+        let wei = HARD_CAP_WEI;
+        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = MAX_VALUE_WEI;
+
+        for (let i = 0; i < HARD_CAP_WEI.div(wei).floor(); i++) {
+            await investmentPool.sendTransaction({ from: getRandomInvestor(), value: wei });
+        }
+
+        const remainWeiToHardCap = HARD_CAP_WEI.sub(await investmentPool.weiRaised());
+        if (remainWeiToHardCap.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+            if (remainWeiToHardCap.comparedTo(MIN_VALUE_WEI) >= 0) {
+                await investmentPool.sendTransaction({ from: getRandomInvestor(), value: remainWeiToHardCap });
+            }
+            //#else
+            await investmentPool.sendTransaction({ from: getRandomInvestor(), value: remainWeiToHardCap });
+            //#endif
+        }
+        //#else
+        await investmentPool.sendTransaction({ from: getRandomInvestor(), value: wei });
+        //#endif
+
+        // finalize
+        await investmentPool.finalize({ from: OWNER });
+
+        //withdraw
+
+        const weiRaised = await investmentPool.weiRaised();
+        const allTokens = await token.balanceOf(investmentPool.address);
+
+        for (let i = 0; i < INVESTORS.length; i++) {
+            const invested = await investmentPool.investments(INVESTORS[i]);
+            if (invested.comparedTo(0) > 0) {
+                const expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                await investmentPool.withdrawTokens({ from: INVESTORS[i] });
+                await token.balanceOf(INVESTORS[i]).should.eventually.be.bignumber.equal(expectedTokens);
+            } else {
+                await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
+            }
+        }
     });
     //#endif
 });
