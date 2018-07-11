@@ -55,7 +55,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   function finalize() external nonReentrant {
     require(!isFinalized, "pool is already finalized");
     _preValidateFinalization();
-    investmentAddress.transfer(weiRaised);
+    require(investmentAddress.call.value(weiRaised)(), "error when sending funds to ICO");
     isFinalized = true;
     emit Finalized();
   }

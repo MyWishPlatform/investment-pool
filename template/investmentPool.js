@@ -10,8 +10,8 @@ const { web3async, estimateConstructGas } = require('sc-library/test-utils/web3U
 const getBalance = (address) => web3async(web3.eth, web3.eth.getBalance, address);
 
 const InvestmentPool = artifacts.require('./InvestmentPool.sol');
-const Crowdsale = artifacts.require('./TestCrowdsale.sol');
-const Token = artifacts.require('./TestToken.sol');
+const Crowdsale = artifacts.require('./MockCrowdsale.sol');
+const Token = artifacts.require('./ERC20.sol');
 
 const RATE = 1000;
 const START_TIME = D_START_TIME; // eslint-disable-line no-undef
@@ -33,7 +33,6 @@ contract('InvestmentPool', function (accounts) {
     const INVESTOR_1 = accounts[2];
     const INVESTOR_2 = accounts[3];
     const INVESTOR_3 = accounts[4];
-    const ICO_WALLET = accounts[5];
 
     let now;
     let snapshotId;
@@ -43,20 +42,20 @@ contract('InvestmentPool', function (accounts) {
     };
 
     const createInvestmentPoolWithICO = async () => {
-        const token = await Token.new();
-        const crowdsale = await Crowdsale.new(RATE, ICO_WALLET, token.address);
+        const crowdsale = await Crowdsale.new(RATE);
         return InvestmentPool.new(OWNER, crowdsale.address, 0);
     };
 
     const createInvestmentPoolWithToken = async () => {
-        const token = await Token.new();
-        return InvestmentPool.new(OWNER, 0, token.address);
+        const crowdsale = await Crowdsale.new(RATE);
+        const tokenAddress = await crowdsale.token();
+        return InvestmentPool.new(OWNER, 0, tokenAddress);
     };
 
     const createInvestmentPoolWithICOAndToken = async () => {
-        const token = await Token.new();
-        const crowdsale = await Crowdsale.new(RATE, ICO_WALLET, token.address);
-        return InvestmentPool.new(OWNER, crowdsale.address, token.address);
+        const crowdsale = await Crowdsale.new(RATE);
+        const tokenAddress = await crowdsale.token();
+        return InvestmentPool.new(OWNER, crowdsale.address, tokenAddress);
     };
 
     const getSimpleWeiAmount = async () => {
@@ -85,9 +84,9 @@ contract('InvestmentPool', function (accounts) {
     });
 
     it('#0 gas limit', async () => {
-        const token = await Token.new();
-        const crowdsale = await Crowdsale.new(RATE, ICO_WALLET, token.address);
-        await estimateConstructGas(InvestmentPool, OWNER, crowdsale.address, token.address)
+        const crowdsale = await Crowdsale.new(RATE);
+        const tokenAddress = await crowdsale.token();
+        await estimateConstructGas(InvestmentPool, OWNER, crowdsale.address, tokenAddress)
             .then(gas => console.info('Construct gas:', gas));
     });
 
@@ -175,12 +174,13 @@ contract('InvestmentPool', function (accounts) {
         const wei = await getSimpleWeiAmount();
         await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
 
-        const token = await Token.new();
-        await investmentPool.setTokenAddress(token.address, { from: OWNER });
+        const crowdsale = await Crowdsale.new(RATE);
+        await investmentPool.setInvestmentAddress(crowdsale.address, { from: OWNER });
         await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei }).should.eventually.be.rejected;
 
-        const crowdsale = await Crowdsale.new(RATE, ICO_WALLET, token.address);
-        await investmentPool.setInvestmentAddress(crowdsale.address, { from: OWNER });
+        const tokenAddress = await crowdsale.token();
+        await investmentPool.setTokenAddress(tokenAddress, { from: OWNER });
+        await investmentPool.sendTransaction({ from: INVESTOR_1, value: wei });
     });
     //#if D_MAX_VALUE_WEI > D_HARD_CAP_WEI
 
@@ -194,9 +194,10 @@ contract('InvestmentPool', function (accounts) {
             .should.eventually.be.rejected;
     });
     //#endif
+    //#if (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000
 
     it('#10 check successfully finalization', async () => {
-        const investmentPool = await createInvestmentPool();
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
         //#if D_WHITELIST
         await investmentPool.addAddressToWhitelist(INVESTOR_3, { from: OWNER });
@@ -228,4 +229,5 @@ contract('InvestmentPool', function (accounts) {
         // finalize
         await investmentPool.finalize({ from: OWNER });
     });
+    //#endif
 });
