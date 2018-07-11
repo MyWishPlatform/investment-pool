@@ -33,6 +33,7 @@
   },
   "homepage": "https://github.com/MyWishPlatform/investment-pool#readme",
   "devDependencies": {
+    "bignumber.js": "^7.2.1",
     "c-preprocessor": "^0.2.12",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
