@@ -1,12 +1,13 @@
 pragma solidity ^0.4.23;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "sc-library/contracts/ERC223/ERC223Receiver.sol";
 
 
-contract BaseInvestmentPool is Ownable, ERC223Receiver {
+contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   using SafeMath for uint;
 
   mapping(address => uint) public tokensWithdrawnByInvestor;
@@ -51,6 +52,31 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     invest(msg.sender);
   }
 
+  function finalize() external nonReentrant {
+    require(!isFinalized, "pool is already finalized");
+    _preValidateFinalization();
+    investmentAddress.transfer(weiRaised);
+    isFinalized = true;
+    emit Finalized();
+  }
+
+  function forwardReward() external onlyOwner nonReentrant {
+    require(isFinalized, "contract not finalized yet");
+    uint tokenAmount = _getRewardTokenAmount();
+    require(tokenAmount != 0, "contract have no tokens for you");
+    _transferTokens(owner, tokenAmount);
+    emit WithdrawReward(tokenAmount);
+  }
+
+  function withdrawTokens() external onlyInvestor nonReentrant {
+    address investor = msg.sender;
+    uint tokenAmount = _getInvestorTokenAmount(investor);
+    require(tokenAmount != 0, "contract have no tokens for you");
+    _transferTokens(investor, tokenAmount);
+    tokensWithdrawnByInvestor[investor] = tokensWithdrawnByInvestor[investor].add(tokenAmount);
+    emit WithdrawTokens(investor, tokenAmount);
+  }
+
   function tokenFallback(address, uint, bytes) public {
     require(msg.sender == tokenAddress, "allowed receive tokens only from target ICO");
   }
@@ -73,31 +99,6 @@ contract BaseInvestmentPool is Ownable, ERC223Receiver {
     require(tokenAddress == address(0), "token address already set");
     tokenAddress = _tokenAddress;
     emit SetTokenAddress(_tokenAddress);
-  }
-
-  function finalize() public {
-    require(!isFinalized, "pool is already finalized");
-    _preValidateFinalization();
-    investmentAddress.transfer(weiRaised);
-    isFinalized = true;
-    emit Finalized();
-  }
-
-  function forwardReward() public onlyOwner {
-    require(isFinalized, "contract not finalized yet");
-    uint tokenAmount = _getRewardTokenAmount();
-    require(tokenAmount != 0, "contract have no tokens for you");
-    _transferTokens(owner, tokenAmount);
-    emit WithdrawReward(tokenAmount);
-  }
-
-  function withdrawTokens() public onlyInvestor {
-    address investor = msg.sender;
-    uint tokenAmount = _getInvestorTokenAmount(investor);
-    require(tokenAmount != 0, "contract have no tokens for you");
-    _transferTokens(investor, tokenAmount);
-    tokensWithdrawnByInvestor[investor] = tokensWithdrawnByInvestor[investor].add(tokenAmount);
-    emit WithdrawTokens(investor, tokenAmount);
   }
 
   function _getRewardTokenAmount() internal view returns (uint) {
