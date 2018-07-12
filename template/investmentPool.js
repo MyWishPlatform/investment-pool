@@ -30,6 +30,7 @@ const SECOND = 1;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+const GAS_PRICE = web3.toWei(100, 'gwei');
 
 contract('InvestmentPool', function (accounts) {
     const DEPLOYER = accounts[0];
@@ -72,7 +73,7 @@ contract('InvestmentPool', function (accounts) {
         return InvestmentPool.new(OWNER, crowdsale.address, tokenAddress);
     };
 
-    const getSimpleWeiAmount = async () => {
+    const getSimpleWeiAmount = () => {
         let wei = SOFT_CAP_WEI.div(2).floor();
         //#if D_SOFT_CAP_WEI == 0
         wei = HARD_CAP_WEI.div(2).floor();
@@ -140,7 +141,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
         //#endif
 
-        const wei = await getSimpleWeiAmount();
+        const wei = getSimpleWeiAmount();
         await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
         await timeTo(END_TIME);
         await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
@@ -153,7 +154,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
         //#endif
 
-        const wei = await getSimpleWeiAmount();
+        const wei = getSimpleWeiAmount();
         await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
         await timeTo(START_TIME);
         await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei });
@@ -280,6 +281,83 @@ contract('InvestmentPool', function (accounts) {
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
             }
         }
+
+        await investmentPool.forwardReward({ from: OWNER });
+        await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(getRewardTokenAmount(allTokens));
     });
     //#endif
+
+    it('#12 finalize and cancel after endTime before reach softCap', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(END_TIME);
+        await investmentPool.finalize({ from: OWNER }).should.eventually.be.rejected;
+        await investmentPool.cancel({ from: OWNER });
+    });
+
+    it('#13 finalize and cancel after endTime after reach softCap', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        //#if D_WHITELIST
+        for (let i = 0; i < INVESTORS.length; i++) {
+            await investmentPool.addAddressToWhitelist(INVESTORS[i], { from: OWNER });
+        }
+        //#endif
+
+        // reach soft cap
+        let wei = SOFT_CAP_WEI;
+        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = MAX_VALUE_WEI;
+
+        for (let i = 0; i < SOFT_CAP_WEI.div(wei).floor(); i++) {
+            await investmentPool.sendTransaction({ from: getRandomInvestor(), value: wei });
+        }
+
+        const remainWeiToSoftCap = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
+        if (remainWeiToSoftCap.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+            if (remainWeiToSoftCap.comparedTo(MIN_VALUE_WEI) >= 0) {
+                await investmentPool.sendTransaction({ from: getRandomInvestor(), value: remainWeiToSoftCap });
+            }
+            //#else
+            await investmentPool.sendTransaction({ from: getRandomInvestor(), value: remainWeiToSoftCap });
+            //#endif
+        }
+        //#else
+        await investmentPool.sendTransaction({ from: getRandomInvestor(), value: wei });
+        //#endif
+
+        // finalize after endTime
+        await timeTo(END_TIME);
+        await investmentPool.finalize({ from: OWNER }).should.eventually.be.rejected;
+        await investmentPool.cancel({ from: OWNER });
+    });
+
+    it('#14 refund after cancel', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        //#if D_WHITELIST
+        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
+        //#endif
+
+        // add funds
+        const wei = getSimpleWeiAmount();
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei });
+
+        // cancel
+        await investmentPool.cancel({ from: OWNER });
+
+        // refund
+        await getBalance(investmentPool.address).should.eventually.be.bignumber.equal(wei);
+        const balanceBeforeRefund = await getBalance(INVESTORS[0]);
+
+        const poolBalance = await getBalance(investmentPool.address);
+
+        const refund = await investmentPool.claimRefund({ from: INVESTORS[0] });
+        const gasUsed = new BigNumber(refund.receipt.gasUsed).mul(GAS_PRICE);
+
+        const balanceAfterRefund = (await getBalance(INVESTORS[0])).add(gasUsed);
+        const returnedFunds = balanceAfterRefund.sub(balanceBeforeRefund);
+
+        returnedFunds.should.be.bignumber.equal(poolBalance);
+    });
 });
