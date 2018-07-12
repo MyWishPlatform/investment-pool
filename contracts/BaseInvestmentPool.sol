@@ -123,8 +123,6 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
 
   function _preValidateInvest(address _beneficiary, uint) internal {
     require(_beneficiary != address(0), "cannot invest from null address");
-    require(investmentAddress != address(0), "investment address did not set");
-    require(tokenAddress != address(0), "token address did not set");
     require(!isFinalized, "contract is already finalized");
   }
 

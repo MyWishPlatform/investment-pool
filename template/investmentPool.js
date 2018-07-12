@@ -159,8 +159,8 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei });
         await investmentPool.investments(INVESTORS[0]).should.eventually.be.bignumber.equal(wei);
     });
-
     //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0 || defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+
     it('#7 check min & max', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
@@ -177,25 +177,6 @@ contract('InvestmentPool', function (accounts) {
         //#endif
     });
     //#endif
-
-    it('#8 cannot invest before investment and token address was not set', async () => {
-        const investmentPool = await createInvestmentPool();
-        await timeTo(START_TIME);
-        //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
-        //#endif
-
-        const wei = await getSimpleWeiAmount();
-        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
-
-        const crowdsale = await Crowdsale.new(RATE);
-        await investmentPool.setInvestmentAddress(crowdsale.address, { from: OWNER });
-        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
-
-        const tokenAddress = await crowdsale.token();
-        await investmentPool.setTokenAddress(tokenAddress, { from: OWNER });
-        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei });
-    });
     //#if defined(D_MAX_VALUE_WEI) && (D_MAX_VALUE_WEI > D_HARD_CAP_WEI)
 
     it('#9 cannot invest more than hardCap', async () => {
