@@ -55,18 +55,10 @@ contract InvestmentPool is
   {
     require(softCap < hardCap, "soft cap should be less than hard cap");
   }
-
-  function _preValidateCancellation() internal {
-    super._preValidateCancellation();
-    require(softCapReached() && hasEnded(), "pool already reached soft cap before end time");
-  }
-  //#if defined(D_MIN_VALUE_WEI) || D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER || D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
+  //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER || D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
 
   function _preValidateFinalization() internal {
     super._preValidateFinalization();
-    //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
-    require(hardCap.sub(weiRaised) < D_MIN_VALUE_WEI);
-    //#endif
     //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER && D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
     if (hardCapReached()) {
       require(msg.sender == owner, "only owner can finalize after hardCap is reached");

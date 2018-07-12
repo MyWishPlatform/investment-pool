@@ -11,7 +11,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
 
   function claimRefund() external onlyInvestor nonReentrant {
     require(!isFinalized, "funds already sent to ICO");
-    require(hasEnded() || isCancelled, "contract has not ended and has not been executed cancellation");
+    require(hasEnded() || isCancelled, "contract has not ended and has not cancelled");
     address investor = msg.sender;
     uint amount = investments[investor];
     investor.transfer(amount);
