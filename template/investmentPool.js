@@ -438,4 +438,183 @@ contract('InvestmentPool', function (accounts) {
         }
     });
     //#endif
+
+    //#if D_CAN_CHANGE_TIMES
+    it('#17 check set end time', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+
+        const NEW_END_TIME = Math.floor(START_TIME + (END_TIME - START_TIME) / 2);
+
+        await investmentPool.setEndTime(NEW_END_TIME, { from: OWNER });
+        const newEndTime = await investmentPool.endTime();
+        Number(newEndTime).should.be.equals(NEW_END_TIME, 'end time was not changed');
+
+        // set end time by other
+        await investmentPool.setEndTime(NEW_END_TIME - 1).should.eventually.be.rejected;
+        // set end time less then start
+        await investmentPool.setEndTime(START_TIME - 1, { from: OWNER }).should.eventually.be.rejected;
+
+        // move till ended
+        await increaseTime(NEW_END_TIME - now + 1);
+        const hasEnded = await investmentPool.hasEnded();
+        hasEnded.should.be.equals(true, 'hasEnded must be true, time shifted to new end time');
+    });
+
+    it('#18 check set end time at wrong time', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+
+        const NEW_END_TIME = Math.floor(START_TIME + (END_TIME - START_TIME) / 2);
+
+        // move till started
+        await increaseTime(START_TIME - now + 1);
+
+        await investmentPool.setEndTime(NEW_END_TIME, { from: OWNER });
+        const newEndTime = await investmentPool.endTime();
+        Number(newEndTime).should.be.equals(NEW_END_TIME, 'end time was not changed');
+
+        // move till ended
+        await increaseTime(NEW_END_TIME - START_TIME + 1);
+
+        // impossible to change end time, because already ended
+        await investmentPool.setEndTime(NEW_END_TIME + 2).should.eventually.be.rejected;
+    });
+
+    it('#19 check set wrong end time', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+
+        const MIDDLE_TIME = START_TIME + (END_TIME - START_TIME) / 2;
+
+        // move till new end time will be in the past
+        await timeTo(MIDDLE_TIME);
+
+        // end time in the past
+        await investmentPool.setEndTime(MIDDLE_TIME).should.eventually.be.rejected;
+    });
+
+    it('#20 check set start time', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const NEW_START_TIME = Math.floor(START_TIME + (END_TIME - START_TIME) / 2);
+
+        await investmentPool.setStartTime(NEW_START_TIME, { from: OWNER });
+        const newStartTime = await investmentPool.startTime();
+        Number(newStartTime).should.be.equals(NEW_START_TIME, 'start time was not changed');
+
+        // set start time by other
+        await investmentPool.setStartTime(NEW_START_TIME + 1).should.eventually.be.rejected;
+        // set start time grate then end
+        await investmentPool.setStartTime(END_TIME + 1, { from: OWNER }).should.eventually.be.rejected;
+
+        // move when already started
+        await increaseTime(NEW_START_TIME - now + 1);
+        const hasStarted = await investmentPool.hasStarted();
+        hasStarted.should.be.equals(true, 'hasStarted must be true, time shifted to new start time');
+    });
+
+    it('#21 check set start time at wrong time', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+
+        // move till started
+        await timeTo(START_TIME + 1);
+
+        const NEW_START_TIME = Math.floor(START_TIME + (END_TIME - START_TIME) / 2);
+
+        await investmentPool.setStartTime(NEW_START_TIME, { from: OWNER }).should.eventually.be.rejected;
+
+        // move till ended
+        await timeTo(END_TIME + 1);
+
+        // impossible to change start time, because already ended
+        await investmentPool.setStartTime(END_TIME + 10, { from: OWNER }).should.eventually.be.rejected;
+    });
+
+    it('#22 check set wrong start time', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        // after the end
+        const NEW_START_TIME = END_TIME + 1;
+
+        await investmentPool.setStartTime(NEW_START_TIME, { from: OWNER }).should.eventually.be.rejected;
+    });
+
+    it('#23 check set start time/end time', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        // after the end
+        const MIDDLE_TIME = Math.floor(START_TIME + (END_TIME - START_TIME) / 2);
+
+        await investmentPool.setTimes(MIDDLE_TIME + 1, MIDDLE_TIME - 1, { from: OWNER }).should.eventually.be.rejected;
+
+        await investmentPool.setTimes(START_TIME - 1, END_TIME, { from: OWNER }).should.eventually.be.rejected;
+
+        await investmentPool.setTimes(MIDDLE_TIME - 1, MIDDLE_TIME + 1, { from: OWNER });
+        const newStartTime = await investmentPool.startTime();
+        Number(newStartTime).should.be.equals(MIDDLE_TIME - 1, 'start time was not changed');
+
+        const newEndTime = await investmentPool.endTime();
+        Number(newEndTime).should.be.equals(MIDDLE_TIME + 1, 'end time was not changed');
+
+        await timeTo(MIDDLE_TIME - 10);
+        await investmentPool.setTimes(MIDDLE_TIME, MIDDLE_TIME + 20, { from: OWNER });
+
+        await timeTo(MIDDLE_TIME + 10);
+        // already started
+        await investmentPool.setTimes(MIDDLE_TIME + 1, END_TIME, { from: OWNER }).should.eventually.be.rejected;
+        // end time in the past
+        await investmentPool.setTimes(MIDDLE_TIME, MIDDLE_TIME + 5, { from: OWNER }).should.eventually.be.rejected;
+
+        await investmentPool.setTimes(MIDDLE_TIME, MIDDLE_TIME + 30, { from: OWNER });
+
+        const finalEndTime = await investmentPool.endTime();
+        Number(finalEndTime).should.be.equals(MIDDLE_TIME + 30, 'end time was not changed');
+
+        await timeTo(MIDDLE_TIME + 31);
+        // already ended
+        await investmentPool.setTimes(MIDDLE_TIME, END_TIME, { from: OWNER }).should.eventually.be.rejected;
+    });
+    //#endif
+
+    //#if D_WHITELIST
+    it('#24 check buy not by whitelisted', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: getSimpleWeiAmount() })
+            .should.eventually.be.rejected;
+    });
+
+    it('#25 check add multiple addresses to whitelist', async () => {
+        let wei = getSimpleWeiAmount();
+        for (let i = 0; i < INVESTORS.length; i++) {
+            await revert(snapshotId);
+            snapshotId = (await snapshot()).result;
+
+            const investmentPool = await createInvestmentPoolWithICOAndToken();
+            await timeTo(START_TIME);
+
+            await investmentPool.addAddressesToWhitelist(INVESTORS, { from: OWNER });
+            await investmentPool.sendTransaction({ from: INVESTORS[i], value: wei });
+        }
+    });
+
+    it('#26 check remove addresses from whitelist', async () => {
+        let wei = getSimpleWeiAmount();
+
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+
+        await investmentPool.addAddressesToWhitelist(INVESTORS, { from: OWNER });
+
+        await investmentPool.removeAddressFromWhitelist(INVESTORS[0], { from: OWNER });
+        await investmentPool.sendTransaction({ from: INVESTORS[0], value: wei }).should.eventually.be.rejected;
+
+        await investmentPool.removeAddressesFromWhitelist(INVESTORS, { from: OWNER });
+        for (let i = 0; i < INVESTORS.length; i++) {
+            await investmentPool.sendTransaction({ from: INVESTORS[i], value: wei }).should.eventually.be.rejected;
+        }
+    });
+
+    it('#27 check whitelist 100 addresses', async () => {
+        const addresses = new Array(100).fill(accounts[0]);
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const tx = await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        console.info('Gas used for whitelist 100 addresses: ', tx.receipt.gasUsed);
+    });
+    //#endif
 });
