@@ -1,4 +1,5 @@
 const BigNumber = web3.BigNumber;
+BigNumber.config({ EXPONENTIAL_AT: 100 });
 const pify = require('pify');
 const rand = require('random-seed').create(123);
 require('chai')
@@ -45,7 +46,7 @@ contract('InvestmentPool', function (accounts) {
     };
 
     const getInvestorTokenAmount = (investedAmount, allInvested, allTokenAmount) => {
-        return investedAmount.div(allInvested).mul(allTokenAmount.sub(getRewardTokenAmount(allTokenAmount))).floor();
+        return investedAmount.mul(allTokenAmount).mul(1000 - REWARD_PERMILLE).div(allInvested.mul(1000)).floor();
     };
 
     const getRewardTokenAmount = (allAmount) => {

@@ -1,4 +1,4 @@
-const Crowdsale = artifacts.require('./MockCrowdsale.sol');
+const Crowdsale = artifacts.require('./MockERC20Crowdsale.sol');
 const InvestmentPool = artifacts.require('./InvestmentPool.sol');
 
 module.exports = function (deployer, network, accounts) {

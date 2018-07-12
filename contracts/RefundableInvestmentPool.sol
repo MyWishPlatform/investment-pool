@@ -5,8 +5,6 @@ import "./TimedInvestmentPool.sol";
 
 
 contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentPool {
-  mapping(address => uint) public refunds;
-
   event Refund(address indexed investor, uint amount);
 
   function claimRefund() external onlyInvestor nonReentrant {

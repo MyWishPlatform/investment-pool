@@ -1,16 +1,16 @@
 pragma solidity ^0.4.23;
 
-import "./MockToken.sol";
+import "./MockERC223Token.sol";
 
 
-contract MockCrowdsale {
+contract MockERC223Crowdsale {
   using SafeMath for uint;
 
-  MockToken public token;
+  MockERC223Token public token;
   uint public baseRate;
 
   constructor(uint256 _rate) public {
-    token = new MockToken();
+    token = new MockERC223Token();
     baseRate = _rate;
   }
 
