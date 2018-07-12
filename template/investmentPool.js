@@ -1,4 +1,5 @@
 const BigNumber = web3.BigNumber;
+const pify = require('pify');
 const rand = require('random-seed').create(123);
 require('chai')
     .use(require('chai-bignumber')(BigNumber))
@@ -6,11 +7,10 @@ require('chai')
     .should();
 
 const { timeTo, increaseTime, snapshot, revert } = require('sc-library/test-utils/evmMethods');
-const { web3async, estimateConstructGas } = require('sc-library/test-utils/web3Utils');
-const getBalance = (address) => web3async(web3.eth, web3.eth.getBalance, address);
+const { estimateConstructGas } = require('sc-library/test-utils/web3Utils');
 
 const InvestmentPool = artifacts.require('./InvestmentPool.sol');
-const Crowdsale = artifacts.require('./MockCrowdsale.sol');
+const Crowdsale = artifacts.require('./MockERC20Crowdsale.sol');
 const Token = artifacts.require('./ERC20.sol');
 
 const RATE = 1000;
@@ -90,7 +90,7 @@ contract('InvestmentPool', function (accounts) {
 
     beforeEach(async () => {
         snapshotId = (await snapshot()).result;
-        const block = await web3async(web3.eth, web3.eth.getBlock, 'latest');
+        const block = await pify(web3.eth.getBlock)('latest');
         now = block.timestamp;
     });
 
@@ -275,6 +275,7 @@ contract('InvestmentPool', function (accounts) {
             if (invested.comparedTo(0) > 0) {
                 const expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] });
+                await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
                 await token.balanceOf(INVESTORS[i]).should.eventually.be.bignumber.equal(expectedTokens);
             } else {
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
@@ -282,6 +283,7 @@ contract('InvestmentPool', function (accounts) {
         }
 
         await investmentPool.forwardReward({ from: OWNER });
+        await investmentPool.forwardReward({ from: OWNER }).should.eventually.be.rejected;
         await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(getRewardTokenAmount(allTokens));
     });
     //#endif
@@ -349,15 +351,15 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.cancel({ from: OWNER });
 
         // refund
-        await getBalance(investmentPool.address).should.eventually.be.bignumber.equal(wei);
-        const balanceBeforeRefund = await getBalance(INVESTORS[0]);
+        await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(wei);
+        const balanceBeforeRefund = await pify(web3.eth.getBalance)(INVESTORS[0]);
 
-        const poolBalance = await getBalance(investmentPool.address);
+        const poolBalance = await pify(web3.eth.getBalance)(investmentPool.address);
 
         const refund = await investmentPool.claimRefund({ from: INVESTORS[0] });
         const gasUsed = new BigNumber(refund.receipt.gasUsed).mul(GAS_PRICE);
 
-        const balanceAfterRefund = (await getBalance(INVESTORS[0])).add(gasUsed);
+        const balanceAfterRefund = (await pify(web3.eth.getBalance)(INVESTORS[0])).add(gasUsed);
         const returnedFunds = balanceAfterRefund.sub(balanceBeforeRefund);
 
         returnedFunds.should.be.bignumber.equal(poolBalance);
@@ -378,15 +380,15 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(END_TIME);
 
         // refund
-        await getBalance(investmentPool.address).should.eventually.be.bignumber.equal(wei);
-        const balanceBeforeRefund = await getBalance(INVESTORS[0]);
+        await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(wei);
+        const balanceBeforeRefund = await pify(web3.eth.getBalance)(INVESTORS[0]);
 
-        const poolBalance = await getBalance(investmentPool.address);
+        const poolBalance = await pify(web3.eth.getBalance)(investmentPool.address);
 
         const refund = await investmentPool.claimRefund({ from: INVESTORS[0] });
         const gasUsed = new BigNumber(refund.receipt.gasUsed).mul(GAS_PRICE);
 
-        const balanceAfterRefund = (await getBalance(INVESTORS[0])).add(gasUsed);
+        const balanceAfterRefund = (await pify(web3.eth.getBalance)(INVESTORS[0])).add(gasUsed);
         const returnedFunds = balanceAfterRefund.sub(balanceBeforeRefund);
 
         returnedFunds.should.be.bignumber.equal(poolBalance);
@@ -427,12 +429,12 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(END_TIME);
 
         for (let i = 0; i < INVESTORS.length; i++) {
-            const balanceBeforeRefund = await getBalance(INVESTORS[i]);
+            const balanceBeforeRefund = await pify(web3.eth.getBalance)(INVESTORS[i]);
             const investedBalance = await investmentPool.investments(INVESTORS[i]);
             if (investedBalance.comparedTo(0) === 0) continue;
             const refund = await investmentPool.claimRefund({ from: INVESTORS[i] });
             const gasUsed = new BigNumber(refund.receipt.gasUsed).mul(GAS_PRICE);
-            const balanceAfterRefund = (await getBalance(INVESTORS[i])).add(gasUsed);
+            const balanceAfterRefund = (await pify(web3.eth.getBalance)(INVESTORS[i])).add(gasUsed);
             const returnedFunds = balanceAfterRefund.sub(balanceBeforeRefund);
             returnedFunds.should.be.bignumber.equal(investedBalance);
         }
