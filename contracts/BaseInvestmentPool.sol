@@ -23,7 +23,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   event Finalized();
   event Invest(address indexed investor, uint amount);
   event WithdrawTokens(address indexed investor, uint amount);
-  event WithdrawReward(uint amount);
+  event WithdrawReward(address indexed owner, uint amount);
   event SetInvestmentAddress(address indexed investmentAddress);
   event SetTokenAddress(address indexed tokenAddress);
 
@@ -65,7 +65,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     uint tokenAmount = _getRewardTokenAmount();
     require(tokenAmount != 0, "contract have no tokens for you");
     _transferTokens(owner, tokenAmount);
-    emit WithdrawReward(tokenAmount);
+    emit WithdrawReward(owner, tokenAmount);
   }
 
   function withdrawTokens() external onlyInvestor nonReentrant {
