@@ -24,8 +24,8 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   event Invest(address indexed investor, uint amount);
   event WithdrawTokens(address indexed investor, uint amount);
   event WithdrawReward(uint amount);
-  event SetInvestmentAddress(address investmentAddress);
-  event SetTokenAddress(address tokenAddress);
+  event SetInvestmentAddress(address indexed investmentAddress);
+  event SetTokenAddress(address indexed tokenAddress);
 
   modifier onlyInvestor() {
     require(investments[msg.sender] != 0, "you are not investor");
