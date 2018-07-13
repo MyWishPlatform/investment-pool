@@ -27,11 +27,12 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   event SetInvestmentAddress(address indexed investmentAddress);
   event SetTokenAddress(address indexed tokenAddress);
 
-  modifier onlyInvestor() {
-    require(investments[msg.sender] != 0, "you are not investor");
-    _;
-  }
-
+  /**
+   * @param _owner              who will own the InvestmentPool contract.
+   * @param _investmentAddress  address to which the funds will be sent after successful collection on the contract.
+   * @param _tokenAddress       the address of the contract token whose token we want to receive.
+   * @param _rewardPermille     owner of contract will receive (_rewardPermille / 1000 * all tokens collected) as a fee.
+   */
   constructor(
     address _owner,
     address _investmentAddress,
@@ -48,10 +49,16 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     rewardPermille = _rewardPermille;
   }
 
+  /**
+   * @notice fallback function applying funds.
+   */
   function() external payable {
     invest(msg.sender);
   }
 
+  /**
+   * @notice sends all funds to investmentAddress.
+   */
   function finalize() external nonReentrant {
     require(!isFinalized, "pool is already finalized");
     _preValidateFinalization();
@@ -61,28 +68,31 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     emit Finalized();
   }
 
-  function forwardReward() external onlyOwner nonReentrant {
-    require(isFinalized, "contract not finalized yet");
-    uint tokenAmount = _getRewardTokenAmount();
-    require(tokenAmount != 0, "contract have no tokens for you");
-    _transferTokens(owner, tokenAmount);
-    rewardWithdrawn = rewardWithdrawn.add(tokenAmount);
-    emit WithdrawReward(owner, tokenAmount);
+  /**
+   * @notice withdraws sender's tokens.
+   */
+  function withdrawTokens() external nonReentrant {
+    require(msg.sender == owner || investments[msg.sender] != 0, "you are not owner and not investor");
+    if (investments[msg.sender] != 0) {
+      _withdrawInvestorTokens(msg.sender);
+    }
+    if (msg.sender == owner) {
+      _withdrawOwnerTokens();
+    }
   }
 
-  function withdrawTokens() external onlyInvestor nonReentrant {
-    address investor = msg.sender;
-    uint tokenAmount = _getInvestorTokenAmount(investor);
-    require(tokenAmount != 0, "contract have no tokens for you");
-    _transferTokens(investor, tokenAmount);
-    tokensWithdrawnByInvestor[investor] = tokensWithdrawnByInvestor[investor].add(tokenAmount);
-    emit WithdrawTokens(investor, tokenAmount);
-  }
-
+  /**
+   * @notice token receiver fallback function for compatibility with ERC223. Applies ERC223 tokens from ICO.
+   */
   function tokenFallback(address, uint, bytes) public {
     require(msg.sender == tokenAddress, "allowed receive tokens only from target ICO");
   }
 
+  /**
+   * @notice apply funds from investor.
+   *
+   * @param _beneficiary investor.
+   */
   function invest(address _beneficiary) public payable {
     uint amount = msg.value;
     _preValidateInvest(_beneficiary, amount);
@@ -91,24 +101,64 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     emit Invest(_beneficiary, amount);
   }
 
+  /**
+   * @notice sets investments address if it was not set early.
+   *
+   * @param _investmentAddress investment address to set.
+   */
   function setInvestmentAddress(address _investmentAddress) public onlyOwner {
     require(investmentAddress == address(0), "investment address already set");
     investmentAddress = _investmentAddress;
     emit SetInvestmentAddress(_investmentAddress);
   }
 
+  /**
+   * @notice sets token address if it was not set early.
+   *
+   * @param _tokenAddress token address to set.
+   */
   function setTokenAddress(address _tokenAddress) public onlyOwner {
     require(tokenAddress == address(0), "token address already set");
     tokenAddress = _tokenAddress;
     emit SetTokenAddress(_tokenAddress);
   }
 
+  /**
+   * @notice withdraws investors's part of tokens.
+   */
+  function _withdrawInvestorTokens(address _investor) internal {
+    uint tokenAmount = _getInvestorTokenAmount(_investor);
+    require(tokenAmount != 0, "contract have no tokens for you");
+    _transferTokens(_investor, tokenAmount);
+    tokensWithdrawnByInvestor[_investor] = tokensWithdrawnByInvestor[_investor].add(tokenAmount);
+    emit WithdrawTokens(_investor, tokenAmount);
+  }
+
+  /**
+   * @notice withdraws owner's percent of tokens.
+   */
+  function _withdrawOwnerTokens() internal {
+    require(isFinalized, "contract not finalized yet");
+    uint tokenAmount = _getRewardTokenAmount();
+    require(tokenAmount != 0, "contract have no tokens for you");
+    _transferTokens(owner, tokenAmount);
+    rewardWithdrawn = rewardWithdrawn.add(tokenAmount);
+    emit WithdrawReward(owner, tokenAmount);
+  }
+
+  /**
+   * @return how much tokens will owner receive.
+   */
   function _getRewardTokenAmount() internal view returns (uint) {
     uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
     uint tokenAmount = tokenRaised.mul(rewardPermille).div(1000);
     return tokenAmount.sub(rewardWithdrawn);
   }
 
+  /**
+   * @param _investor investor address.
+   * @return how much tokens will investor receive.
+   */
   function _getInvestorTokenAmount(address _investor) internal view returns (uint) {
     uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
     uint investedAmount = investments[_investor];
@@ -116,16 +166,31 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     return tokenAmount.sub(tokensWithdrawnByInvestor[_investor]);
   }
 
-  function _transferTokens( address _investor, uint _amount) internal {
+  /**
+   * @notice transfers tokens to investor.
+   *
+   * @param _investor investor address.
+   * @param _amount   token amount to transfer.
+   */
+  function _transferTokens(address _investor, uint _amount) internal {
     ERC20Basic(tokenAddress).transfer(_investor, _amount);
     tokensWithdrawn = tokensWithdrawn.add(_amount);
   }
 
-  function _preValidateInvest(address _beneficiary, uint) internal {
+  /**
+   * @notice validates transaction before applying funds from investor.
+   *
+   * @param _beneficiary  investor address.
+   * @param _amount       wei amount investor send.
+   */
+  function _preValidateInvest(address _beneficiary, uint _amount) internal {
     require(_beneficiary != address(0), "cannot invest from null address");
     require(!isFinalized, "contract is already finalized");
   }
 
+  /**
+   * @notice validates transaction before sending funds to ICO.
+   */
   function _preValidateFinalization() internal {
     require(investmentAddress != address(0), "investment address did not set");
     require(tokenAddress != address(0), "token address did not set");

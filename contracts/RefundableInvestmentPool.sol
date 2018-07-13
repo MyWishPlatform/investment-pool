@@ -7,7 +7,8 @@ import "./TimedInvestmentPool.sol";
 contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentPool {
   event Refund(address indexed investor, uint amount);
 
-  function claimRefund() external onlyInvestor nonReentrant {
+  function claimRefund() external nonReentrant {
+    require(investments[msg.sender] != 0, "you are not investor");
     require(!isFinalized, "funds already sent to ICO");
     require(hasEnded() || isCancelled, "contract has not ended and has not cancelled");
     address investor = msg.sender;

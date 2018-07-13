@@ -244,7 +244,11 @@ contract('InvestmentPool', function (accounts) {
         for (let i = 0; i < INVESTORS.length; i++) {
             const invested = await investmentPool.investments(INVESTORS[i]);
             if (invested.comparedTo(0) > 0) {
-                const expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                let expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                if (INVESTORS[i] === OWNER) {
+                    expectedTokens = expectedTokens.add(getRewardTokenAmount(allTokens));
+                }
+
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] });
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
                 await token.balanceOf(INVESTORS[i]).should.eventually.be.bignumber.equal(expectedTokens);
@@ -252,10 +256,6 @@ contract('InvestmentPool', function (accounts) {
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
             }
         }
-
-        await investmentPool.forwardReward({ from: OWNER });
-        await investmentPool.forwardReward({ from: OWNER }).should.eventually.be.rejected;
-        await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(getRewardTokenAmount(allTokens));
     });
     //#endif
 
@@ -557,18 +557,17 @@ contract('InvestmentPool', function (accounts) {
         for (let i = 0; i < addresses.length; i++) {
             const invested = await investmentPool.investments(addresses[i]);
             if (invested.comparedTo(0) > 0) {
-                const expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                let expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                if (addresses[i] === OWNER) {
+                    expectedTokens = expectedTokens.add(getRewardTokenAmount(allTokens));
+                }
+
                 await investmentPool.withdrawTokens({ from: addresses[i] });
                 await token.balanceOf(addresses[i]).should.eventually.be.bignumber.equal(expectedTokens);
             } else {
                 await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
             }
         }
-
-        const ownerBalanceBeforeReward = await token.balanceOf(OWNER);
-        await investmentPool.forwardReward({ from: OWNER });
-        await token.balanceOf(OWNER).should.eventually.be.bignumber
-            .equal(getRewardTokenAmount(allTokens).add(ownerBalanceBeforeReward));
     });
 
     it('#29 decline unknown ERC223 tokens', async () => {
@@ -599,18 +598,16 @@ contract('InvestmentPool', function (accounts) {
         for (let i = 0; i < addresses.length; i++) {
             const invested = await investmentPool.investments(addresses[i]);
             if (invested.comparedTo(0) > 0) {
-                const expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                let expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                if (addresses[i] === OWNER) {
+                    expectedTokens = expectedTokens.add(getRewardTokenAmount(allTokens));
+                }
                 await investmentPool.withdrawTokens({ from: addresses[i] });
                 await token.balanceOf(addresses[i]).should.eventually.be.bignumber.equal(expectedTokens);
             } else {
                 await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
             }
         }
-
-        const ownerBalanceBeforeReward = await token.balanceOf(OWNER);
-        await investmentPool.forwardReward({ from: OWNER });
-        await token.balanceOf(OWNER).should.eventually.be.bignumber
-            .equal(getRewardTokenAmount(allTokens).add(ownerBalanceBeforeReward));
     });
 
     it('#31 check vesting transfer crowdsale', async () => {
@@ -643,7 +640,7 @@ contract('InvestmentPool', function (accounts) {
         }
 
         const ownerBalanceBeforeReward1 = await token.balanceOf(OWNER);
-        await investmentPool.forwardReward({ from: OWNER });
+        await investmentPool.withdrawTokens({ from: OWNER });
         await token.balanceOf(OWNER).should.eventually.be.bignumber
             .equal(getRewardTokenAmount(allTokens1).add(ownerBalanceBeforeReward1));
 
@@ -662,7 +659,7 @@ contract('InvestmentPool', function (accounts) {
             }
         }
 
-        await investmentPool.forwardReward({ from: OWNER });
+        await investmentPool.withdrawTokens({ from: OWNER });
         await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(getRewardTokenAmount(allTokens2));
     });
 });
