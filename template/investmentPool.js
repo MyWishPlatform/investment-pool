@@ -12,7 +12,10 @@ const { estimateConstructGas } = require('sc-library/test-utils/web3Utils');
 
 const InvestmentPool = artifacts.require('./InvestmentPool.sol');
 const Crowdsale = artifacts.require('./MockERC20Crowdsale.sol');
+const MockVestingERC20Crowdsale = artifacts.require('./MockVestingERC20Crowdsale.sol');
+const DelayedCrowdsale = artifacts.require('./DelayedERC20Crowdsale.sol');
 const Token = artifacts.require('./ERC20.sol');
+const ERC223Token = artifacts.require('./MockERC223Token.sol');
 
 const START_TIME = D_START_TIME; // eslint-disable-line no-undef
 const END_TIME = D_END_TIME; // eslint-disable-line no-undef
@@ -25,15 +28,9 @@ const MIN_VALUE_WEI = new BigNumber('D_MIN_VALUE_WEI');
 const MAX_VALUE_WEI = new BigNumber('D_MAX_VALUE_WEI');
 //#endif
 const REWARD_PERMILLE = D_REWARD_PERMILLE; // eslint-disable-line no-undef
-
-const SECOND = 1;
-const MINUTE = 60 * SECOND;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 const GAS_PRICE = web3.toWei(100, 'gwei');
 
 contract('InvestmentPool', function (accounts) {
-    const DEPLOYER = accounts[0];
     const OWNER = accounts[1];
     const INVESTORS = [accounts[2], accounts[3], accounts[4]];
 
@@ -572,5 +569,100 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.forwardReward({ from: OWNER });
         await token.balanceOf(OWNER).should.eventually.be.bignumber
             .equal(getRewardTokenAmount(allTokens).add(ownerBalanceBeforeReward));
+    });
+
+    it('#29 decline unknown ERC223 tokens', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const token = await ERC223Token.new();
+        await token.mint(investmentPool, 100).should.eventually.be.rejected;
+    });
+
+    it('#30 check delayed transfer crowdsale', async () => {
+        const crowdsale = await DelayedCrowdsale.new();
+        const token = Token.at(await crowdsale.token());
+        const investmentPool = await InvestmentPool.new(OWNER, crowdsale.address, token.address);
+        await timeTo(START_TIME);
+        const addresses = [...INVESTORS, OWNER];
+        await reach(HARD_CAP_WEI, investmentPool, addresses);
+
+        // finalize
+        await investmentPool.finalize({ from: OWNER });
+        await token.balanceOf(investmentPool.address).should.eventually.be.bignumber.zero;
+
+        await crowdsale.finalize();
+
+        //withdraw
+        const weiRaised = await investmentPool.weiRaised();
+        const allTokens = await token.balanceOf(investmentPool.address);
+        allTokens.should.be.bignumber.not.equal(0);
+
+        for (let i = 0; i < addresses.length; i++) {
+            const invested = await investmentPool.investments(addresses[i]);
+            if (invested.comparedTo(0) > 0) {
+                const expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                await investmentPool.withdrawTokens({ from: addresses[i] });
+                await token.balanceOf(addresses[i]).should.eventually.be.bignumber.equal(expectedTokens);
+            } else {
+                await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
+            }
+        }
+
+        const ownerBalanceBeforeReward = await token.balanceOf(OWNER);
+        await investmentPool.forwardReward({ from: OWNER });
+        await token.balanceOf(OWNER).should.eventually.be.bignumber
+            .equal(getRewardTokenAmount(allTokens).add(ownerBalanceBeforeReward));
+    });
+
+    it('#31 check vesting transfer crowdsale', async () => {
+        const crowdsale = await MockVestingERC20Crowdsale.new();
+        const token = Token.at(await crowdsale.token());
+        const investmentPool = await InvestmentPool.new(OWNER, crowdsale.address, token.address);
+        await timeTo(START_TIME);
+        await reach(HARD_CAP_WEI, investmentPool, INVESTORS);
+
+        // finalize
+        await investmentPool.finalize({ from: OWNER });
+        await token.balanceOf(investmentPool.address).should.eventually.be.bignumber.zero;
+
+        // withdraw first half
+        await crowdsale.releaseFirstHalfTokens();
+        const weiRaised = await investmentPool.weiRaised();
+        const allTokens1 = await token.balanceOf(investmentPool.address);
+        allTokens1.should.be.bignumber.not.equal(0);
+
+        for (let i = 0; i < INVESTORS.length; i++) {
+            const invested = await investmentPool.investments(INVESTORS[i]);
+            if (invested.comparedTo(0) > 0) {
+                const expectedTokens = getInvestorTokenAmount(
+                    invested.div(2).floor(), weiRaised.div(2).floor(), allTokens1);
+                await investmentPool.withdrawTokens({ from: INVESTORS[i] });
+                await token.balanceOf(INVESTORS[i]).should.eventually.be.bignumber.equal(expectedTokens);
+            } else {
+                await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
+            }
+        }
+
+        const ownerBalanceBeforeReward1 = await token.balanceOf(OWNER);
+        await investmentPool.forwardReward({ from: OWNER });
+        await token.balanceOf(OWNER).should.eventually.be.bignumber
+            .equal(getRewardTokenAmount(allTokens1).add(ownerBalanceBeforeReward1));
+
+        // withdraw second half
+        await crowdsale.releaseSecondHalfTokens();
+        const allTokens2 = (await token.balanceOf(investmentPool.address)).add(allTokens1);
+
+        for (let i = 0; i < INVESTORS.length; i++) {
+            const invested = await investmentPool.investments(INVESTORS[i]);
+            if (invested.comparedTo(0) > 0) {
+                const expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens2);
+                await investmentPool.withdrawTokens({ from: INVESTORS[i] });
+                await token.balanceOf(INVESTORS[i]).should.eventually.be.bignumber.equal(expectedTokens);
+            } else {
+                await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
+            }
+        }
+
+        await investmentPool.forwardReward({ from: OWNER });
+        await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(getRewardTokenAmount(allTokens2));
     });
 });
