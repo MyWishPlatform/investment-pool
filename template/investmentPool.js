@@ -89,6 +89,35 @@ contract('InvestmentPool', function (accounts) {
         return wei;
     };
 
+    const reach = async (cap, investmentPool, addresses) => {
+        //#if D_WHITELIST
+        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        //#endif
+
+        // reach cap
+        let wei = cap;
+        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = MAX_VALUE_WEI;
+
+        for (let i = 0; i < cap.div(wei).floor(); i++) {
+            await investmentPool.sendTransaction({ from: getRandom(addresses), value: wei });
+        }
+
+        const remainWeiToCap = cap.sub(await investmentPool.weiRaised());
+        if (remainWeiToCap.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+            if (remainWeiToCap.comparedTo(MIN_VALUE_WEI) >= 0) {
+                await investmentPool.sendTransaction({ from: getRandom(addresses), value: remainWeiToCap });
+            }
+            //#else
+            await investmentPool.sendTransaction({ from: getRandom(addresses), value: remainWeiToCap });
+            //#endif
+        }
+        //#else
+        await investmentPool.sendTransaction({ from: getRandom(addresses), value: wei });
+        //#endif
+    };
+
     beforeEach(async () => {
         snapshotId = (await snapshot()).result;
         const block = await pify(web3.eth.getBlock)('latest');
@@ -197,34 +226,7 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
-        //#if D_WHITELIST
-        await investmentPool.addAddressToWhitelist(INVESTORS[2], { from: OWNER });
-        //#endif
-
-        // reach hard cap
-        let wei = HARD_CAP_WEI;
-        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = MAX_VALUE_WEI;
-
-        for (let i = 0; i < HARD_CAP_WEI.div(wei).floor(); i++) {
-            await investmentPool.sendTransaction({ from: INVESTORS[2], value: wei });
-        }
-
-        const remainWeiToHardCap = HARD_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remainWeiToHardCap.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-            if (remainWeiToHardCap.comparedTo(MIN_VALUE_WEI) >= 0) {
-                await investmentPool.sendTransaction({ from: INVESTORS[2], value: remainWeiToHardCap });
-            }
-            //#else
-            await investmentPool.sendTransaction({ from: INVESTORS[2], value: remainWeiToHardCap });
-            //#endif
-        }
-        //#else
-        await investmentPool.sendTransaction({ from: INVESTORS[2], value: wei });
-        //#endif
-
-        // finalize
+        await reach(HARD_CAP_WEI, investmentPool, [INVESTORS[2]]);
         await investmentPool.finalize({ from: OWNER });
         await token.balanceOf(investmentPool.address).should.eventually.be.bignumber.not.negative;
     });
@@ -235,39 +237,11 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(INVESTORS, { from: OWNER });
-        //#endif
-
-        // reach hard cap
-        let wei = HARD_CAP_WEI;
-        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = MAX_VALUE_WEI;
-
-        for (let i = 0; i < HARD_CAP_WEI.div(wei).floor(); i++) {
-            await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: wei });
-        }
-
-        const remainWeiToHardCap = HARD_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remainWeiToHardCap.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-            if (remainWeiToHardCap.comparedTo(MIN_VALUE_WEI) >= 0) {
-                await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: remainWeiToHardCap });
-            }
-            //#else
-            await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: remainWeiToHardCap });
-            //#endif
-        }
-        //#else
-        await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: wei });
-        //#endif
-
-        // finalize
+        await reach(HARD_CAP_WEI, investmentPool, INVESTORS);
         await investmentPool.finalize({ from: INVESTORS[0] }).should.eventually.be.rejected;
         await investmentPool.finalize({ from: OWNER });
 
         //withdraw
-
         const weiRaised = await investmentPool.weiRaised();
         const allTokens = await token.balanceOf(investmentPool.address);
 
@@ -303,33 +277,7 @@ contract('InvestmentPool', function (accounts) {
     it('#13 finalize and cancel after endTime after reach softCap', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(INVESTORS, { from: OWNER });
-        //#endif
-
-        // reach soft cap
-        let wei = SOFT_CAP_WEI;
-        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = MAX_VALUE_WEI;
-
-        for (let i = 0; i < SOFT_CAP_WEI.div(wei).floor(); i++) {
-            await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: wei });
-        }
-
-        const remainWeiToSoftCap = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remainWeiToSoftCap.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-            if (remainWeiToSoftCap.comparedTo(MIN_VALUE_WEI) >= 0) {
-                await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: remainWeiToSoftCap });
-            }
-            //#else
-            await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: remainWeiToSoftCap });
-            //#endif
-        }
-        //#else
-        await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: wei });
-        //#endif
-
+        await reach(SOFT_CAP_WEI, investmentPool, INVESTORS);
         // finalize after endTime
         await timeTo(END_TIME);
         await investmentPool.finalize({ from: OWNER }).should.eventually.be.rejected;
@@ -399,32 +347,7 @@ contract('InvestmentPool', function (accounts) {
     it('#16 refund for several investors', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(INVESTORS, { from: OWNER });
-        //#endif
-
-        // reach soft cap
-        let wei = SOFT_CAP_WEI;
-        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = MAX_VALUE_WEI;
-
-        for (let i = 0; i < SOFT_CAP_WEI.div(wei).floor(); i++) {
-            await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: wei });
-        }
-
-        const remainWeiToSoftCap = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remainWeiToSoftCap.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-            if (remainWeiToSoftCap.comparedTo(MIN_VALUE_WEI) >= 0) {
-                await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: remainWeiToSoftCap });
-            }
-            //#else
-            await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: remainWeiToSoftCap });
-            //#endif
-        }
-        //#else
-        await investmentPool.sendTransaction({ from: getRandom(INVESTORS), value: wei });
-        //#endif
+        await reach(SOFT_CAP_WEI, investmentPool, INVESTORS);
 
         // refunds after time
         await timeTo(END_TIME);
@@ -626,38 +549,12 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
-        //#endif
-
-        // reach soft cap
-        let wei = SOFT_CAP_WEI;
-        //#if defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = MAX_VALUE_WEI;
-
-        for (let i = 0; i < SOFT_CAP_WEI.div(wei).floor(); i++) {
-            await investmentPool.sendTransaction({ from: getRandom(addresses), value: wei });
-        }
-
-        const remainWeiToSoftCap = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remainWeiToSoftCap.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-            if (remainWeiToSoftCap.comparedTo(MIN_VALUE_WEI) >= 0) {
-                await investmentPool.sendTransaction({ from: getRandom(addresses), value: remainWeiToSoftCap });
-            }
-            //#else
-            await investmentPool.sendTransaction({ from: getRandom(addresses), value: remainWeiToSoftCap });
-            //#endif
-        }
-        //#else
-        await investmentPool.sendTransaction({ from: getRandom(addresses), value: wei });
-        //#endif
+        await reach(SOFT_CAP_WEI, investmentPool, addresses);
 
         // finalize
         await investmentPool.finalize({ from: OWNER });
 
         //withdraw
-
         const weiRaised = await investmentPool.weiRaised();
         const allTokens = await token.balanceOf(investmentPool.address);
 
