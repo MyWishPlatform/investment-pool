@@ -14,7 +14,6 @@ const InvestmentPool = artifacts.require('./InvestmentPool.sol');
 const Crowdsale = artifacts.require('./MockERC20Crowdsale.sol');
 const Token = artifacts.require('./ERC20.sol');
 
-const RATE = 1000;
 const START_TIME = D_START_TIME; // eslint-disable-line no-undef
 const END_TIME = D_END_TIME; // eslint-disable-line no-undef
 const SOFT_CAP_WEI = new BigNumber('D_SOFT_CAP_WEI');
@@ -58,18 +57,18 @@ contract('InvestmentPool', function (accounts) {
     };
 
     const createInvestmentPoolWithICO = async () => {
-        const crowdsale = await Crowdsale.new(RATE);
+        const crowdsale = await Crowdsale.new();
         return InvestmentPool.new(OWNER, crowdsale.address, 0);
     };
 
     const createInvestmentPoolWithToken = async () => {
-        const crowdsale = await Crowdsale.new(RATE);
+        const crowdsale = await Crowdsale.new();
         const tokenAddress = await crowdsale.token();
         return InvestmentPool.new(OWNER, 0, tokenAddress);
     };
 
     const createInvestmentPoolWithICOAndToken = async () => {
-        const crowdsale = await Crowdsale.new(RATE);
+        const crowdsale = await Crowdsale.new();
         const tokenAddress = await crowdsale.token();
         return InvestmentPool.new(OWNER, crowdsale.address, tokenAddress);
     };
@@ -129,7 +128,7 @@ contract('InvestmentPool', function (accounts) {
     });
 
     it('#0 gas limit', async () => {
-        const crowdsale = await Crowdsale.new(RATE);
+        const crowdsale = await Crowdsale.new();
         const tokenAddress = await crowdsale.token();
         await estimateConstructGas(InvestmentPool, OWNER, crowdsale.address, tokenAddress)
             .then(gas => console.info('Construct gas:', gas));

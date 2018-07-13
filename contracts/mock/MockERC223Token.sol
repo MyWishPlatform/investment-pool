@@ -5,5 +5,4 @@ import "./MockERC20Token.sol";
 
 
 contract MockERC223Token is MockERC20Token, ERC223MintableToken {
-
 }

@@ -9,11 +9,9 @@ contract BaseERC20Crowdsale {
   mapping(address => uint) public tokens;
   address[] public investors;
   MockERC20Token public token;
-  uint public rate;
 
-  constructor(uint256 _rate) public {
+  constructor() public {
     token = _createTokenContract();
-    rate = _rate;
   }
 
   function () external payable {
@@ -25,8 +23,12 @@ contract BaseERC20Crowdsale {
     if (!_alreadyInvested(_beneficiary)) {
       investors.push(_beneficiary);
     }
-    uint tokenAmount = weiAmount.mul(rate);
+    uint tokenAmount = weiAmount.mul(getRate());
     tokens[_beneficiary] = tokens[_beneficiary].add(tokenAmount);
+  }
+
+  function getRate() public pure returns (uint) {
+    return 1000;
   }
 
   function _forwardTokens(address _to, uint _amount) internal {
