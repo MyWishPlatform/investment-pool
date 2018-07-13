@@ -104,7 +104,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
 
   function _getRewardTokenAmount() internal view returns (uint) {
     uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
-    uint tokenAmount = tokenRaised * rewardPermille / 1000;
+    uint tokenAmount = tokenRaised.mul(rewardPermille).div(1000);
     return tokenAmount.sub(rewardWithdrawn);
   }
 
