@@ -66,6 +66,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     uint tokenAmount = _getRewardTokenAmount();
     require(tokenAmount != 0, "contract have no tokens for you");
     _transferTokens(owner, tokenAmount);
+    rewardWithdrawn = rewardWithdrawn.add(tokenAmount);
     emit WithdrawReward(owner, tokenAmount);
   }
 
