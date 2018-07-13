@@ -34,7 +34,7 @@ contract CancellableInvestmentPool is BaseInvestmentPool {
   }
 
   /**
-   * @notice validates contract's state before applying users funds.
+   * @notice validates contract state before applying users funds.
    */
   function _preValidateInvest(address _beneficiary, uint _amount) internal {
     super._preValidateInvest(_beneficiary, _amount);

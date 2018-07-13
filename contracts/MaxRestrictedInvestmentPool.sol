@@ -10,6 +10,9 @@ contract MaxRestrictedInvestmentPool is BaseInvestmentPool {
     maxInvestment = _maxInvestment;
   }
 
+  /**
+   * @notice validates investor's transactions and contract state before applying investors funds.
+   */
   function _preValidateInvest(address _beneficiary, uint _amount) internal {
     super._preValidateInvest(_beneficiary, _amount);
     require(_amount <= maxInvestment, "too high value");

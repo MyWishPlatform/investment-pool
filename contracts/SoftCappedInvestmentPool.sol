@@ -10,10 +10,16 @@ contract SoftCappedInvestmentPool is BaseInvestmentPool {
     softCap = _softCap;
   }
 
+  /**
+   * @return is soft cap reached
+   */
   function softCapReached() public view returns (bool) {
     return weiRaised >= softCap;
   }
 
+  /**
+   * @notice validates transaction before sending funds to ICO.
+   */
   function _preValidateFinalization() internal {
     super._preValidateFinalization();
     require(softCapReached(), "soft cap did not reached yet");

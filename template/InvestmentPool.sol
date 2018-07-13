@@ -57,6 +57,9 @@ contract InvestmentPool is
   }
   //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER || D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
 
+  /**
+   * @notice validates transaction and contract state before sending funds to ICO.
+   */
   function _preValidateFinalization() internal {
     super._preValidateFinalization();
     //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER && D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER

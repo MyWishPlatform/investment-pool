@@ -6,6 +6,9 @@ import "./TimedInvestmentPool.sol";
 contract ChangeableTimedInvestmentPool is TimedInvestmentPool {
   event TimesChanged(uint startTime, uint endTime, uint oldStartTime, uint oldEndTime);
 
+  /**
+   * @notice shifts the start time when contract applies funds from investors.
+   */
   function setStartTime(uint _startTime) public onlyOwner {
     // only if InvestmentPool was not started
     require(now < startTime);
@@ -21,6 +24,9 @@ contract ChangeableTimedInvestmentPool is TimedInvestmentPool {
     startTime = _startTime;
   }
 
+  /**
+   * @notice shifts the end time when contract applies funds from investors.
+   */
   function setEndTime(uint _endTime) public onlyOwner {
     // only if InvestmentPool was not ended
     require(now < endTime);
@@ -36,6 +42,9 @@ contract ChangeableTimedInvestmentPool is TimedInvestmentPool {
     endTime = _endTime;
   }
 
+  /**
+   * @notice shifts the time (start & end) when contract applies funds from investors.
+   */
   function setTimes(uint _startTime, uint _endTime) public onlyOwner {
     require(_endTime > _startTime);
     uint oldStartTime = startTime;
