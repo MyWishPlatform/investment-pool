@@ -234,7 +234,9 @@ contract('InvestmentPool', function (accounts) {
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
         await reach(HARD_CAP_WEI, investmentPool, INVESTORS);
+        //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER
         await investmentPool.finalize({ from: INVESTORS[0] }).should.eventually.be.rejected;
+        //#endif
         await investmentPool.finalize({ from: OWNER });
 
         //withdraw
@@ -248,7 +250,6 @@ contract('InvestmentPool', function (accounts) {
                 if (INVESTORS[i] === OWNER) {
                     expectedTokens = expectedTokens.add(getRewardTokenAmount(allTokens));
                 }
-
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] });
                 await investmentPool.withdrawTokens({ from: INVESTORS[i] }).should.eventually.be.rejected;
                 await token.balanceOf(INVESTORS[i]).should.eventually.be.bignumber.equal(expectedTokens);
