@@ -17,8 +17,10 @@ import "./ChangeableTimedInvestmentPool.sol";
 //#endif
 
 
-// solium-disable-next-line lbrace
-contract InvestmentPool is
+/**
+ * @title InvestmentPool
+ */
+contract InvestmentPool is // solium-disable-line lbrace
     SoftCappedInvestmentPool
   , HardCappedInvestmentPool
   , CancellableInvestmentPool
@@ -36,6 +38,11 @@ contract InvestmentPool is
   , ChangeableTimedInvestmentPool
   //#endif
 {
+  /**
+   * @param _owner              who will own the contract.
+   * @param _investmentAddress  all funds will be sent to this address when soft cap will be reached.
+   * @param _tokenAddress       the address of the contract token whose token we want to receive.
+   */
   constructor(
     address _owner,
     address _investmentAddress,

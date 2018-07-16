@@ -7,24 +7,101 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "sc-library/contracts/ERC223/ERC223Receiver.sol";
 
 
+/**
+ * @title BaseInvestmentPool
+ * @dev The contract that contains base investment pool functionality:
+ *      apply funds, send it investment address, withdraw tokens.
+ */
 contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   using SafeMath for uint;
 
+  /**
+   * @notice how much tokens each investor withdrawn from investment pool.
+   */
   mapping(address => uint) public tokensWithdrawnByInvestor;
+
+  /**
+   * @notice how much funds each investor sent to investment pool.
+   */
   mapping(address => uint) public investments;
+
+  /**
+   * @notice all funds will be sent to this address when soft cap will be reached.
+   */
   address public investmentAddress;
+
+  /**
+   * @notice address of token contract from which tokens will be transferred to investment pool.
+   */
   address public tokenAddress;
+
+  /**
+   * @notice how much tokens all investors withdrawn from contract.
+   */
   uint public tokensWithdrawn;
+
+  /**
+   * @notice how much tokens contract owner withdrawn from his reward part.
+   */
   uint public rewardWithdrawn;
+
+  /**
+   * @notice  how much tokens will receive contract owner.
+   *          Owner will receive (rewardPermille * all collected tokens / 1000).
+   */
   uint public rewardPermille;
+
+  /**
+   * @notice how much wei already collected on contract.
+   */
   uint public weiRaised;
+
+  /**
+   * @notice is money already sent to investment address.
+   */
   bool public isFinalized;
 
+  /**
+   * @notice emitted when funds is transferred to investmentAddress.
+   */
   event Finalized();
+
+  /**
+   * @notice emitted when investor sends funds to this contract.
+   *
+   * @param investor  investor address.
+   * @param amount    wei amount.
+   */
   event Invest(address indexed investor, uint amount);
+
+  /**
+   * @notice emitted when investor takes him tokens from the contract.
+   *
+   * @param investor  investor address.
+   * @param amount    token amount.
+   */
   event WithdrawTokens(address indexed investor, uint amount);
+
+  /**
+   * @notice emitted when contract owner takes him tokens from the contract.
+   *
+   * @param owner   contract owner.
+   * @param amount  token amount.
+   */
   event WithdrawReward(address indexed owner, uint amount);
+
+  /**
+   * @notice emitted when contract owner sets investment address.
+   *
+   * @param investmentAddress investment address.
+   */
   event SetInvestmentAddress(address indexed investmentAddress);
+
+  /**
+   * @notice emitted when contract owner sets token address.
+   *
+   * @param tokenAddress token address.
+   */
   event SetTokenAddress(address indexed tokenAddress);
 
   /**

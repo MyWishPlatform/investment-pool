@@ -4,7 +4,19 @@ import "./CancellableInvestmentPool.sol";
 import "./TimedInvestmentPool.sol";
 
 
+/**
+ * @title RefundableInvestmentPool
+ * @dev The contract extends CancellableInvestmentPool and TimedInvestmentPool and adds additional functionality:
+ *      investors can take their funds back if fundraising was cancelled or send time is over and funds was not be sent
+ *      to the investment address.
+ */
 contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentPool {
+  /**
+   * @notice emitted when investor takes him funds back.
+   *
+   * @param investor  investor address.
+   * @param amount    wei amount.
+   */
   event Refund(address indexed investor, uint amount);
 
   /**

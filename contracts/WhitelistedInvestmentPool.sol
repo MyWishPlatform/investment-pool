@@ -3,10 +3,29 @@ pragma solidity ^0.4.23;
 import "./BaseInvestmentPool.sol";
 
 
+/**
+ * @title WhitelistedInvestmentPool
+ * @dev The contract extends BaseInvestmentPool and adds additional functionality:
+ *      only whitelisted investors can send funds to the contract.
+ */
 contract WhitelistedInvestmentPool is BaseInvestmentPool {
+  /**
+   * @notice investors which can contribute funds to the contract.
+   */
   mapping(address => bool) private whitelist;
 
+  /**
+   * @notice emitted when contract owner added new address to the whitelist.
+   *
+   * @param _address whitelisted address.
+   */
   event WhitelistedAddressAdded(address indexed _address);
+
+  /**
+   * @notice emitted when contract owner removed address from the whitelist.
+   *
+   * @param _address address removed from whitelist.
+   */
   event WhitelistedAddressRemoved(address indexed _address);
 
   /**

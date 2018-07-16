@@ -3,9 +3,19 @@ pragma solidity ^0.4.23;
 import "./BaseInvestmentPool.sol";
 
 
+/**
+ * @title CancellableInvestmentPool
+ * @dev The contract extends BaseInvestmentPool and adds additional functionality: owner can cancel fundraising.
+ */
 contract CancellableInvestmentPool is BaseInvestmentPool {
+  /**
+   * @notice is contract owner cancelled fundraising.
+   */
   bool public isCancelled;
 
+  /**
+   * @notice emitted when contract owner cancelled fundraising.
+   */
   event Cancelled();
 
   /**

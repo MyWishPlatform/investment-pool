@@ -3,7 +3,20 @@ pragma solidity ^0.4.23;
 import "./TimedInvestmentPool.sol";
 
 
+/**
+ * @title ChangeableTimedInvestmentPool
+ * @dev The contract extends TimedInvestmentPool and adds additional functionality:
+ *      owner can change start and end times.
+ */
 contract ChangeableTimedInvestmentPool is TimedInvestmentPool {
+  /**
+   * @notice emitted when contract owner shifted start or/and end time.
+   *
+   * @param startTime     new start time.
+   * @param endTime       new end time.
+   * @param oldStartTime  old start time.
+   * @param oldEndTime    old end time.
+   */
   event TimesChanged(uint startTime, uint endTime, uint oldStartTime, uint oldEndTime);
 
   /**
