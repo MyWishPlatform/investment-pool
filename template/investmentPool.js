@@ -274,7 +274,11 @@ contract('InvestmentPool', function (accounts) {
     it('#13 finalize and cancel after endTime after reach softCap', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
+        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, INVESTORS);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, INVESTORS);
+        //#endif
         // finalize after endTime
         await timeTo(END_TIME);
         await investmentPool.finalize({ from: OWNER }).should.eventually.be.rejected;
@@ -344,7 +348,11 @@ contract('InvestmentPool', function (accounts) {
     it('#16 refund for several investors', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
+        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, INVESTORS);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, INVESTORS);
+        //#endif
 
         // refunds after time
         await timeTo(END_TIME);
@@ -546,7 +554,11 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
+        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, addresses);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, addresses);
+        //#endif
 
         // finalize
         await investmentPool.finalize({ from: OWNER });
