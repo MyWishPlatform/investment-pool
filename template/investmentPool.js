@@ -566,7 +566,9 @@ contract('InvestmentPool', function (accounts) {
                 await investmentPool.withdrawTokens({ from: addresses[i] });
                 await token.balanceOf(addresses[i]).should.eventually.be.bignumber.equal(expectedTokens);
             } else {
-                await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
+                if (addresses[i] !== OWNER) {
+                    await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
+                }
             }
         }
     });
