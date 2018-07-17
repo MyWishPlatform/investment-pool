@@ -153,7 +153,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     if (investments[msg.sender] != 0) {
       _withdrawInvestorTokens(msg.sender);
     }
-    if (msg.sender == owner) {
+    if (msg.sender == owner && rewardPermille != 0) {
       _withdrawOwnerTokens();
     }
   }
