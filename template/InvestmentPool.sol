@@ -86,4 +86,10 @@ contract InvestmentPool is // solium-disable-line lbrace
     //#endif
   }
   //#endif
+
+  //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
+  function hardCapReached() public view returns (bool) {
+    return weiRaised + D_MIN_VALUE_WEI >= hardCap;
+  }
+  //#endif
 }
