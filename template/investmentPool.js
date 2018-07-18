@@ -2,6 +2,9 @@ const BigNumber = web3.BigNumber;
 BigNumber.config({ EXPONENTIAL_AT: 100 });
 const pify = require('pify');
 const rand = require('random-seed').create(123);
+const Web31 = require('web3');
+const web31 = new Web31(web3.currentProvider);
+
 require('chai')
     .use(require('chai-bignumber')(BigNumber))
     .use(require('chai-as-promised'))
@@ -16,6 +19,7 @@ const MockVestingERC20Crowdsale = artifacts.require('./MockVestingERC20Crowdsale
 const DelayedCrowdsale = artifacts.require('./DelayedERC20Crowdsale.sol');
 const Token = artifacts.require('./ERC20.sol');
 const ERC223Token = artifacts.require('./MockERC223Token.sol');
+const MockCustomCallsContract = artifacts.require('./MockCustomCallsContract.sol');
 
 const START_TIME = D_START_TIME; // eslint-disable-line no-undef
 const END_TIME = D_END_TIME; // eslint-disable-line no-undef
@@ -113,6 +117,8 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.sendTransaction({ from: getRandom(addresses), value: wei });
         //#endif
     };
+
+    const encode = web31.eth.abi.encodeFunctionSignature;
 
     beforeEach(async () => {
         snapshotId = (await snapshot()).result;
@@ -676,5 +682,42 @@ contract('InvestmentPool', function (accounts) {
 
         await investmentPool.withdrawTokens({ from: OWNER });
         await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(getRewardTokenAmount(allTokens2));
+    });
+
+    it('#32 custom call on crowdsale contract', async () => {
+        const investmentPool = await createInvestmentPool();
+        const mockContract = await MockCustomCallsContract.new();
+        await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('nonPayableCall()'), { from: OWNER });
+        await mockContract.isCalledNonPayable().should.eventually.be.true;
+    });
+
+    it('#33 custom payable call on crowdsale contract', async () => {
+        const investmentPool = await createInvestmentPool();
+        const mockContract = await MockCustomCallsContract.new();
+        await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('payableCall()'), { from: OWNER, value: 100 });
+        await mockContract.isCalledPayable().should.eventually.be.true;
+    });
+
+    it('#34 custom requiring funds call on crowdsale contract', async () => {
+        const investmentPool = await createInvestmentPool();
+        const mockContract = await MockCustomCallsContract.new();
+        await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('payableCallRequiresFunds()'), { from: OWNER });
+        await mockContract.isCalledPayableRequiredFunds().should.eventually.be.false;
+        await investmentPool.executeOnInvestmentAddress(
+            encode('payableCallRequiresFunds()'), { from: OWNER, value: 100 });
+        await mockContract.isCalledPayableRequiredFunds().should.eventually.be.true;
+    });
+
+    it('#35 custom returning funds call on crowdsale contract', async () => {
+        const investmentPool = await createInvestmentPool();
+        const mockContract = await MockCustomCallsContract.new();
+        await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        await mockContract.sendTransaction({ from: OWNER, value: 100 });
+        await investmentPool.executeOnInvestmentAddress(encode('returningFundsCall()'), { from: OWNER });
+        await mockContract.isCalledReturningFunds().should.eventually.be.true;
+        await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(100);
     });
 });

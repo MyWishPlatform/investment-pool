@@ -130,6 +130,9 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
    * @notice fallback function applying funds.
    */
   function() external payable {
+    if (msg.sender == investmentAddress) {
+      return; // ICO refund
+    }
     invest(msg.sender);
   }
 
@@ -155,6 +158,25 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
     }
     if (msg.sender == owner && rewardPermille != 0) {
       _withdrawOwnerTokens();
+    }
+  }
+
+  /**
+   * Execute function on contract of investment address.
+   *
+   * @param _data call data. For example: claimRefund() - 0xb5545a3c.
+   */
+  function executeOnInvestmentAddress(bytes _data)
+    external
+    payable
+    onlyOwner
+    nonReentrant
+  {
+    require(investmentAddress != address(0), "investment address did not set");
+    if (msg.value != 0) {
+      investmentAddress.call.value(msg.value)(_data); // solium-disable-line security/no-call-value
+    } else {
+      investmentAddress.call(_data); // solium-disable-line security/no-low-level-calls
     }
   }
 
