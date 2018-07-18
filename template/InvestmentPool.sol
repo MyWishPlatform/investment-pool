@@ -62,6 +62,15 @@ contract InvestmentPool is // solium-disable-line lbrace
   {
     require(softCap < hardCap, "soft cap should be less than hard cap");
   }
+  //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
+
+  /**
+   * @return is hard cap reached or remains less than MIN_VALUE.
+   */
+  function hardCapReached() public view returns (bool) {
+    return weiRaised.add(minInvestment) >= hardCap;
+  }
+  //#endif
   //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER || D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
 
   /**
@@ -84,15 +93,6 @@ contract InvestmentPool is // solium-disable-line lbrace
       require(msg.sender == owner, "only owner can finalize after softCap is reached");
     }
     //#endif
-  }
-  //#endif
-  //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
-
-  /**
-   * @return is hard cap reached or remains less than MIN_VALUE.
-   */
-  function hardCapReached() public view returns (bool) {
-    return weiRaised.add(minInvestment) >= hardCap;
   }
   //#endif
 }
