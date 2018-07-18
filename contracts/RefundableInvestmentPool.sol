@@ -17,6 +17,11 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
   bool public isInvestmentAddressRefunded;
 
   /**
+   * @notice is investment target (ICO) refunding.
+   */
+  bool private isRefundMode;
+
+  /**
    * @notice emitted when investor takes him funds back.
    *
    * @param investor  investor address.
@@ -24,9 +29,12 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    */
   event Refund(address indexed investor, uint amount);
 
+  /**
+   * @notice emitted when investment target (ICO) returns funds back to InvestmentPool.
+   *
+   * @param amount refunded wei amount.
+   */
   event ClaimRefund(uint amount);
-
-  bool private isRefundMode;
 
   /**
    * @notice fallback function applying funds from investors or ICO.
@@ -67,6 +75,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    */
   function claimRefund() external nonReentrant {
     require(investments[msg.sender] != 0, "you are not investor");
+    // solium-disable-next-line indentation
     require(isCancelled || (!isFinalized && hasEnded()) || isInvestmentAddressRefunded,
       "contract has not ended, not cancelled and ico did not refunded");
     address investor = msg.sender;

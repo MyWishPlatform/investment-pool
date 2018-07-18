@@ -4,7 +4,7 @@ pragma solidity ^0.4.23;
 contract RefundVault {
   function() external payable {}
 
-  function refund(address _recipient) {
+  function refund(address _recipient)  public {
     _recipient.call.value(address(this).balance)(); // solium-disable-line security/no-call-value
   }
 }
@@ -20,7 +20,7 @@ contract MockRefundableCrowdsale {
   }
 
   function() external payable {
-    vault.call.value(msg.value)();
+    vault.call.value(msg.value)(); // solium-disable-line security/no-call-value
     address(vault).call.value(address(this).balance)(); // solium-disable-line security/no-call-value
   }
 
