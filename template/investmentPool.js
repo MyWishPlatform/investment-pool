@@ -689,7 +689,7 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPool();
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
-        await investmentPool.executeOnInvestmentAddress(encode('nonPayableCall()'), { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('nonPayableCall()'), 400000, { from: OWNER });
         await mockContract.isCalledNonPayable().should.eventually.be.true;
     });
 
@@ -697,7 +697,7 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPool();
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
-        await investmentPool.executeOnInvestmentAddress(encode('payableCall()'), { from: OWNER, value: 100 });
+        await investmentPool.executeOnInvestmentAddress(encode('payableCall()'), 400000, { from: OWNER, value: 100 });
         await mockContract.isCalledPayable().should.eventually.be.true;
     });
 
@@ -705,10 +705,10 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPool();
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
-        await investmentPool.executeOnInvestmentAddress(encode('payableCallRequiresFunds()'), { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('payableCallRequiresFunds()'), 400000, { from: OWNER });
         await mockContract.isCalledPayableRequiredFunds().should.eventually.be.false;
         await investmentPool.executeOnInvestmentAddress(
-            encode('payableCallRequiresFunds()'), { from: OWNER, value: 100 });
+            encode('payableCallRequiresFunds()'), 400000, { from: OWNER, value: 100 });
         await mockContract.isCalledPayableRequiredFunds().should.eventually.be.true;
     });
 
@@ -717,7 +717,7 @@ contract('InvestmentPool', function (accounts) {
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
         await mockContract.sendTransaction({ from: OWNER, value: 100 });
-        await investmentPool.executeOnInvestmentAddress(encode('returningFundsCall()'), { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('returningFundsCall()'), 400000, { from: OWNER });
         await mockContract.isCalledReturningFunds().should.eventually.be.true;
         await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(100);
     });
@@ -738,7 +738,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.finalize({ from: OWNER });
 
         // ico refund
-        await investmentPool.executeOnInvestmentAddress(encode('returningFundsCall()'), { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('returningFundsCall()'), 400000, { from: OWNER });
 
         // IPool refund
         await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(SOFT_CAP_WEI);
@@ -770,7 +770,7 @@ contract('InvestmentPool', function (accounts) {
         await pify(web3.eth.getBalance)(vaultAddress).should.eventually.be.bignumber.equal(reachedBalance);
 
         // ico refund
-        await investmentPool.executeOnInvestmentAddress(encode('refund()'), { from: OWNER });
+        await investmentPool.executeOnInvestmentAddress(encode('refund()'), 400000, { from: OWNER });
 
         // IPool refund
         await pify(web3.eth.getBalance)(vaultAddress).should.eventually.be.bignumber.equal(0);

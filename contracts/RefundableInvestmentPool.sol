@@ -45,7 +45,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    *
    * @param _data call data. For example: claimRefund() - 0xb5545a3c.
    */
-  function executeOnInvestmentAddress(bytes _data)
+  function executeOnInvestmentAddress(bytes _data, uint _gas)
     external
     payable
     onlyOwner
@@ -54,9 +54,9 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
     require(investmentAddress != address(0), "investment address did not set");
     isRefundMode = true;
     if (msg.value != 0) {
-      investmentAddress.call.value(msg.value)(_data); // solium-disable-line security/no-call-value
+      investmentAddress.call.gas(_gas).value(msg.value)(_data); // solium-disable-line security/no-call-value
     } else {
-      investmentAddress.call(_data); // solium-disable-line security/no-low-level-calls
+      investmentAddress.call.gas(_gas)(_data); // solium-disable-line security/no-low-level-calls
     }
     isRefundMode = false;
   }
