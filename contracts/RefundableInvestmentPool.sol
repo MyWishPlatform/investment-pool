@@ -14,7 +14,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
   /**
    * @notice is ICO returned funds.
    */
-  bool public isIcoRefunded;
+  bool public isInvestmentAddressRefunded;
 
   /**
    * @notice emitted when investor takes him funds back.
@@ -24,15 +24,41 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    */
   event Refund(address indexed investor, uint amount);
 
+  event ClaimRefund(uint amount);
+
+  bool private isRefundMode;
+
   /**
    * @notice fallback function applying funds from investors or ICO.
    */
   function() external payable {
-    if (msg.sender == investmentAddress) {
-      isIcoRefunded = true;
+    if (msg.sender == investmentAddress || isRefundMode) {
+      isInvestmentAddressRefunded = true;
+      emit ClaimRefund(msg.value);
     } else {
       invest(msg.sender);
     }
+  }
+
+  /**
+   * Execute function on contract of investment address. It is for refund
+   *
+   * @param _data call data. For example: claimRefund() - 0xb5545a3c.
+   */
+  function executeOnInvestmentAddress(bytes _data)
+    external
+    payable
+    onlyOwner
+    nonReentrant
+  {
+    require(investmentAddress != address(0), "investment address did not set");
+    isRefundMode = true;
+    if (msg.value != 0) {
+      investmentAddress.call.value(msg.value)(_data); // solium-disable-line security/no-call-value
+    } else {
+      investmentAddress.call(_data); // solium-disable-line security/no-low-level-calls
+    }
+    isRefundMode = false;
   }
 
   /**
@@ -41,7 +67,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    */
   function claimRefund() external nonReentrant {
     require(investments[msg.sender] != 0, "you are not investor");
-    require(isCancelled || (!isFinalized && hasEnded()) || isIcoRefunded,
+    require(isCancelled || (!isFinalized && hasEnded()) || isInvestmentAddressRefunded,
       "contract has not ended, not cancelled and ico did not refunded");
     address investor = msg.sender;
     uint amount = investments[investor];
