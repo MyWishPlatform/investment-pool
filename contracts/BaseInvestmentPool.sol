@@ -127,16 +127,6 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   }
 
   /**
-   * @notice fallback function applying funds.
-   */
-  function() external payable {
-    if (msg.sender == investmentAddress) {
-      return; // ICO refund
-    }
-    invest(msg.sender);
-  }
-
-  /**
    * @notice sends all funds to investmentAddress.
    */
   function finalize() external nonReentrant {

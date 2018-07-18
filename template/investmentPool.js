@@ -720,4 +720,33 @@ contract('InvestmentPool', function (accounts) {
         await mockContract.isCalledReturningFunds().should.eventually.be.true;
         await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(100);
     });
+
+    it('#36 refund after ICO refunded', async () => {
+        const investmentPool = await createInvestmentPoolWithToken();
+        const mockContract = await MockCustomCallsContract.new();
+        await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        await timeTo(START_TIME);
+        //#if D_WHITELIST
+        await investmentPool.addAddressToWhitelist(INVESTORS[0], { from: OWNER });
+        //#endif
+
+        // add funds
+        await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[0]]);
+
+        // finalize
+        await investmentPool.finalize({ from: OWNER });
+
+        // ico refund
+        await investmentPool.executeOnInvestmentAddress(encode('returningFundsCall()'), { from: OWNER });
+
+        // IPool refund
+        await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(SOFT_CAP_WEI);
+        const balanceBeforeRefund = await pify(web3.eth.getBalance)(INVESTORS[0]);
+        const expectedRefund = await investmentPool.investments(INVESTORS[0]);
+        const refund = await investmentPool.claimRefund({ from: INVESTORS[0] });
+        const gasUsed = new BigNumber(refund.receipt.gasUsed).mul(GAS_PRICE);
+        const balanceAfterRefund = (await pify(web3.eth.getBalance)(INVESTORS[0])).add(gasUsed);
+        const returnedFunds = balanceAfterRefund.sub(balanceBeforeRefund);
+        returnedFunds.should.be.bignumber.equal(expectedRefund);
+    });
 });

@@ -24,6 +24,6 @@ contract MockCustomCallsContract {
 
   function returningFundsCall() public {
     isCalledReturningFunds = true;
-    msg.sender.transfer(address(this).balance);
+    msg.sender.call.value(address(this).balance)(); // solium-disable-line security/no-call-value
   }
 }
