@@ -1,0 +1,11 @@
+{
+  "commentEscape": false,
+  "constants": {
+    "//#if": "#if",
+    "//#endif": "#endif",
+    "//#define": "#define",
+    "//#ifdef": "#ifdef",
+    "//#else": "#else",
+    "//#elif": "#elif"
+  }
+}
