@@ -627,7 +627,9 @@ contract('InvestmentPool', function (accounts) {
                 await investmentPool.withdrawTokens({ from: addresses[i] });
                 await token.balanceOf(addresses[i]).should.eventually.be.bignumber.equal(expectedTokens);
             } else {
-                await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
+                if (addresses[i] !== OWNER) {
+                    await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
+                }
             }
         }
     });
@@ -721,6 +723,7 @@ contract('InvestmentPool', function (accounts) {
         await mockContract.isCalledReturningFunds().should.eventually.be.true;
         await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(100);
     });
+    // #if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#36 refund after ICO refunded', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
@@ -732,7 +735,7 @@ contract('InvestmentPool', function (accounts) {
         //#endif
 
         // add funds
-        await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[0]]);
+        await reach(HARD_CAP_WEI, investmentPool, [INVESTORS[0]]);
 
         // finalize
         await investmentPool.finalize({ from: OWNER });
@@ -741,7 +744,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.executeOnInvestmentAddress(encode('returningFundsCall()'), 400000, { from: OWNER });
 
         // IPool refund
-        await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(SOFT_CAP_WEI);
+        await investmentPool.hardCapReached().should.eventually.be.equal(true);
         const balanceBeforeRefund = await pify(web3.eth.getBalance)(INVESTORS[0]);
         const expectedRefund = await investmentPool.investments(INVESTORS[0]);
         const refund = await investmentPool.claimRefund({ from: INVESTORS[0] });
@@ -750,6 +753,8 @@ contract('InvestmentPool', function (accounts) {
         const returnedFunds = balanceAfterRefund.sub(balanceBeforeRefund);
         returnedFunds.should.be.bignumber.equal(expectedRefund);
     });
+    //#endif
+    // #if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#37 refund from another address', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
@@ -761,7 +766,7 @@ contract('InvestmentPool', function (accounts) {
         //#endif
 
         // add funds
-        await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[0]]);
+        await reach(HARD_CAP_WEI, investmentPool, [INVESTORS[0]]);
         const reachedBalance = await pify(web3.eth.getBalance)(investmentPool.address);
 
         // finalize
@@ -783,4 +788,5 @@ contract('InvestmentPool', function (accounts) {
         const returnedFunds = balanceAfterRefund.sub(balanceBeforeRefund);
         returnedFunds.should.be.bignumber.equal(expectedRefund);
     });
+    //#endif
 });
