@@ -41,7 +41,6 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    */
   function() external payable {
     if (msg.sender == investmentAddress || isRefundMode) {
-      isInvestmentAddressRefunded = true;
       emit ClaimRefund(msg.value);
     } else {
       invest(msg.sender);
@@ -49,24 +48,29 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
   }
 
   /**
-   * Execute function on contract of investment address. It is for refund
+   * Execute function on contract of investment address after IPool sent funds to investmentAddress. It is for refund.
    *
    * @param _data call data. For example: claimRefund() - 0xb5545a3c.
    */
-  function executeOnInvestmentAddress(bytes _data, uint _gas)
+  function executeAfterFinalize(bytes _data)
     external
     payable
     onlyOwner
     nonReentrant
   {
     require(investmentAddress != address(0), "investment address did not set");
+    require(isFinalized, "contract not finalized yet");
+    uint balanceBeforeCall = address(this).balance;
     isRefundMode = true;
     if (msg.value != 0) {
-      investmentAddress.call.gas(_gas).value(msg.value)(_data); // solium-disable-line security/no-call-value
+      investmentAddress.call.value(msg.value)(_data); // solium-disable-line security/no-call-value
     } else {
-      investmentAddress.call.gas(_gas)(_data); // solium-disable-line security/no-low-level-calls
+      investmentAddress.call(_data); // solium-disable-line security/no-low-level-calls
     }
     isRefundMode = false;
+    if (address(this).balance > balanceBeforeCall) {
+      isInvestmentAddressRefunded = true;
+    }
   }
 
   /**
