@@ -46,10 +46,12 @@ contract InvestmentPool is // solium-disable-line lbrace
   constructor(
     address _owner,
     address _investmentAddress,
-    address _tokenAddress
+    address _tokenAddress,
+    address _serviceAccount
   )
     public
     BaseInvestmentPool(_owner, _investmentAddress, _tokenAddress, D_REWARD_PERMILLE)
+    RefundableInvestmentPool(_serviceAccount)
     SoftCappedInvestmentPool(D_SOFT_CAP_WEI)
     HardCappedInvestmentPool(D_HARD_CAP_WEI)
     TimedInvestmentPool(D_START_TIME, D_END_TIME)

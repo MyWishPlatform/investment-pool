@@ -55,24 +55,24 @@ contract('InvestmentPool', function (accounts) {
     };
 
     const createInvestmentPool = async () => {
-        return InvestmentPool.new(OWNER, 0, 0);
+        return InvestmentPool.new(OWNER, 0, 0, 0);
     };
 
     const createInvestmentPoolWithICO = async () => {
         const crowdsale = await Crowdsale.new();
-        return InvestmentPool.new(OWNER, crowdsale.address, 0);
+        return InvestmentPool.new(OWNER, crowdsale.address, 0, 0);
     };
 
     const createInvestmentPoolWithToken = async () => {
         const crowdsale = await Crowdsale.new();
         const tokenAddress = await crowdsale.token();
-        return InvestmentPool.new(OWNER, 0, tokenAddress);
+        return InvestmentPool.new(OWNER, 0, tokenAddress, 0);
     };
 
     const createInvestmentPoolWithICOAndToken = async () => {
         const crowdsale = await Crowdsale.new();
         const tokenAddress = await crowdsale.token();
-        return InvestmentPool.new(OWNER, crowdsale.address, tokenAddress);
+        return InvestmentPool.new(OWNER, crowdsale.address, tokenAddress, 0);
     };
 
     const getSimpleWeiAmount = () => {
@@ -134,7 +134,7 @@ contract('InvestmentPool', function (accounts) {
     it('#0 gas limit', async () => {
         const crowdsale = await Crowdsale.new();
         const tokenAddress = await crowdsale.token();
-        await estimateConstructGas(InvestmentPool, OWNER, crowdsale.address, tokenAddress)
+        await estimateConstructGas(InvestmentPool, OWNER, crowdsale.address, tokenAddress, 0)
             .then(gas => console.info('Construct gas:', gas));
     });
 
@@ -601,7 +601,7 @@ contract('InvestmentPool', function (accounts) {
     it('#30 check delayed transfer crowdsale', async () => {
         const crowdsale = await DelayedCrowdsale.new();
         const token = Token.at(await crowdsale.token());
-        const investmentPool = await InvestmentPool.new(OWNER, crowdsale.address, token.address);
+        const investmentPool = await InvestmentPool.new(OWNER, crowdsale.address, token.address, 0);
         await timeTo(START_TIME);
         const addresses = [...INVESTORS, OWNER];
         await reach(HARD_CAP_WEI, investmentPool, addresses);
@@ -637,7 +637,7 @@ contract('InvestmentPool', function (accounts) {
     it('#31 check vesting transfer crowdsale', async () => {
         const crowdsale = await MockVestingERC20Crowdsale.new();
         const token = Token.at(await crowdsale.token());
-        const investmentPool = await InvestmentPool.new(OWNER, crowdsale.address, token.address);
+        const investmentPool = await InvestmentPool.new(OWNER, crowdsale.address, token.address, 0);
         await timeTo(START_TIME);
         await reach(HARD_CAP_WEI, investmentPool, INVESTORS);
 
@@ -737,7 +737,7 @@ contract('InvestmentPool', function (accounts) {
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
         //#if D_SOFT_CAP_WEI == 0
-        await reach(100, investmentPool, [INVESTORS[1]]);
+        await reach(new BigNumber(100), investmentPool, [INVESTORS[1]]);
         //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
         //#endif
@@ -813,4 +813,23 @@ contract('InvestmentPool', function (accounts) {
         returnedFunds.should.be.bignumber.equal(expectedRefund);
     });
     //#endif
+
+    it('#39 service account may execute', async () => {
+        const serviceAccount = INVESTORS[0];
+        const mockContract = await MockCustomCallsContract.new();
+        const crowdsale = await Crowdsale.new();
+        const tokenAddress = await crowdsale.token();
+        const investmentPool = await InvestmentPool.new(OWNER, mockContract.address, tokenAddress, serviceAccount);
+        await timeTo(START_TIME);
+        //#if D_SOFT_CAP_WEI == 0
+        await reach(new BigNumber(100), investmentPool, [INVESTORS[1]]);
+        //#else
+        await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
+        await investmentPool.finalize({ from: OWNER });
+        await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: INVESTORS[1] })
+            .should.eventually.be.rejected;
+        await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: serviceAccount });
+        await mockContract.isCalledNonPayable().should.eventually.be.true;
+    });
 });

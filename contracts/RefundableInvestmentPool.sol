@@ -12,6 +12,11 @@ import "./TimedInvestmentPool.sol";
  */
 contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentPool {
   /**
+   * @notice who may execute `executeAfterFinalize` function besides owner. If it's 0x0 then only owner may.
+   */
+  address public serviceAccount;
+
+  /**
    * @notice is ICO returned funds.
    */
   bool public isInvestmentAddressRefunded;
@@ -37,6 +42,14 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
   event ClaimRefund(uint amount);
 
   /**
+   * @param _serviceAccount who may execute `executeAfterFinalize` function besides owner.
+   *                        If it's 0x0 then only owner may.
+   */
+  constructor(address _serviceAccount) {
+    serviceAccount = _serviceAccount;
+  }
+
+  /**
    * @notice fallback function applying funds from investors or ICO.
    */
   function() external payable {
@@ -55,9 +68,9 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
   function executeAfterFinalize(bytes _data)
     external
     payable
-    onlyOwner
     nonReentrant
   {
+    require(msg.sender == owner || msg.sender == serviceAccount, "only owner and service account may do this");
     require(investmentAddress != address(0), "investment address did not set");
     require(isFinalized, "contract not finalized yet");
     uint balanceBeforeCall = address(this).balance;
