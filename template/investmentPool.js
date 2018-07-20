@@ -707,7 +707,11 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: OWNER });
         await mockContract.isCalledNonPayable().should.eventually.be.true;
@@ -720,7 +724,11 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('payableCall()'), { from: OWNER, value: 100 });
         await mockContract.isCalledPayable().should.eventually.be.true;
@@ -733,7 +741,11 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('payableCallRequiresFunds()'), { from: OWNER });
         await mockContract.isCalledPayableRequiredFunds().should.eventually.be.false;
@@ -752,7 +764,11 @@ contract('InvestmentPool', function (accounts) {
         //#if D_SOFT_CAP_WEI == 0
         await reach(new BigNumber(100), investmentPool, [INVESTORS[1]]);
         //#else
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         //#endif
         const reachedBalance = await pify(web3.eth.getBalance)(investmentPool.address);
         await investmentPool.finalize({ from: OWNER });
@@ -839,7 +855,11 @@ contract('InvestmentPool', function (accounts) {
         //#if D_SOFT_CAP_WEI == 0
         await reach(new BigNumber(100), investmentPool, [INVESTORS[1]]);
         //#else
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: INVESTORS[1] })
@@ -853,7 +873,11 @@ contract('InvestmentPool', function (accounts) {
     it('#40 who can send funds after soft cap', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
-        await reach(SOFT_CAP_WEI, investmentPool, INVESTORS);
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
+        await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         //#if D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
         await investmentPool.finalize({ from: INVESTORS[0] }).should.eventually.be.rejected;
         await investmentPool.finalize({ from: OWNER });
