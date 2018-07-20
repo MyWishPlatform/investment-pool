@@ -53,7 +53,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    * @notice fallback function applying funds from investors or ICO.
    */
   function() external payable {
-    if (msg.sender == investmentAddress || isRefundMode) {
+    if (isFinalized && (msg.sender == investmentAddress || isRefundMode)) {
       emit ClaimRefund(msg.value);
     } else {
       invest(msg.sender);
