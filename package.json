@@ -1,0 +1,58 @@
+{
+  "name": "investment-pool",
+  "version": "0.1.0",
+  "description": "",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "compile": "./scripts/compile.sh",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:sol": "solium -d .",
+    "lint:sol:fix": "solium -d . --fix",
+    "lint:all": "yarn lint && yarn lint:sol",
+    "lint:all:fix": "yarn lint:fix && yarn lint:sol:fix",
+    "migrate": "truffle migrate",
+    "test": "./scripts/test.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MyWishPlatform/investment-pool.git"
+  },
+  "keywords": [
+    "investment-pool",
+    "truffle",
+    "solidity"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MyWishPlatform/investment-pool/issues"
+  },
+  "homepage": "https://github.com/MyWishPlatform/investment-pool#readme",
+  "devDependencies": {
+    "bignumber.js": "^7.2.1",
+    "c-preprocessor": "^0.2.12",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.2",
+    "eslint": "^5.1.0",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
+    "ganache-core": "^2.1.5",
+    "pify": "^3.0.0",
+    "random-seed": "^0.3.0",
+    "solium": "^1.1.8",
+    "truffle": "^4.1.13",
+    "web3": "^1.0.0-beta.34"
+  },
+  "dependencies": {
+    "openzeppelin-solidity": "1.10.0",
+    "sc-library": "github:MyWishPlatform/sc-library#0.7.0"
+  }
+}
