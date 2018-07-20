@@ -43,6 +43,7 @@
     "generator-star-spacing": ["error", "before"],
     "promise/avoid-new": 0,
     "promise/always-return": 0,
-    "spaced-comment": 0
+    "spaced-comment": 0,
+    "no-multiple-empty-lines": 0
   }
 }

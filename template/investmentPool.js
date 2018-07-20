@@ -231,7 +231,7 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         await reach(HARD_CAP_WEI, investmentPool, [INVESTORS[2]]);
         await investmentPool.finalize({ from: OWNER });
-        await token.balanceOf(investmentPool.address).should.eventually.be.bignumber.not.negative;
+        await token.balanceOf(investmentPool.address).should.eventually.be.bignumber.above(0);
     });
     //#endif
     //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
@@ -555,6 +555,7 @@ contract('InvestmentPool', function (accounts) {
         console.info('Gas used for whitelist 100 addresses: ', tx.receipt.gasUsed);
     });
     //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#28 check correct withdrawing when owner participated', async () => {
         const addresses = [...INVESTORS, OWNER];
@@ -591,12 +592,14 @@ contract('InvestmentPool', function (accounts) {
             }
         }
     });
+    //#endif
 
     it('#29 decline unknown ERC223 tokens', async () => {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = await ERC223Token.new();
         await token.mint(investmentPool, 100).should.eventually.be.rejected;
     });
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#30 check delayed transfer crowdsale', async () => {
         const crowdsale = await DelayedCrowdsale.new();
@@ -633,6 +636,8 @@ contract('InvestmentPool', function (accounts) {
             }
         }
     });
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#31 check vesting transfer crowdsale', async () => {
         const crowdsale = await MockVestingERC20Crowdsale.new();
@@ -686,6 +691,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.withdrawTokens({ from: OWNER });
         await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(getRewardTokenAmount(allTokens2));
     });
+    //#endif
 
     it('#32 custom call before finalized', async () => {
         const investmentPool = await createInvestmentPool();
@@ -694,35 +700,52 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: OWNER })
             .should.eventually.be.rejected;
     });
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#33 custom call on crowdsale contract', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
         await timeTo(START_TIME);
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: OWNER });
         await mockContract.isCalledNonPayable().should.eventually.be.true;
     });
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#34 custom payable call on crowdsale contract', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
         await timeTo(START_TIME);
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('payableCall()'), { from: OWNER, value: 100 });
         await mockContract.isCalledPayable().should.eventually.be.true;
     });
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#35 custom requiring funds call on crowdsale contract', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
         await timeTo(START_TIME);
         const mockContract = await MockCustomCallsContract.new();
         await investmentPool.setInvestmentAddress(mockContract.address, { from: OWNER });
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('payableCallRequiresFunds()'), { from: OWNER });
         await mockContract.isCalledPayableRequiredFunds().should.eventually.be.false;
@@ -730,6 +753,8 @@ contract('InvestmentPool', function (accounts) {
             encode('payableCallRequiresFunds()'), { from: OWNER, value: 100 });
         await mockContract.isCalledPayableRequiredFunds().should.eventually.be.true;
     });
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#36 custom returning funds call on crowdsale contract', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
@@ -739,7 +764,11 @@ contract('InvestmentPool', function (accounts) {
         //#if D_SOFT_CAP_WEI == 0
         await reach(new BigNumber(100), investmentPool, [INVESTORS[1]]);
         //#else
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         //#endif
         const reachedBalance = await pify(web3.eth.getBalance)(investmentPool.address);
         await investmentPool.finalize({ from: OWNER });
@@ -747,7 +776,8 @@ contract('InvestmentPool', function (accounts) {
         await mockContract.isCalledReturningFunds().should.eventually.be.true;
         await pify(web3.eth.getBalance)(investmentPool.address).should.eventually.be.bignumber.equal(reachedBalance);
     });
-    // #if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#37 refund after ICO refunded', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
@@ -778,7 +808,7 @@ contract('InvestmentPool', function (accounts) {
         returnedFunds.should.be.bignumber.equal(expectedRefund);
     });
     //#endif
-    // #if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#38 refund from another address', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
@@ -813,6 +843,7 @@ contract('InvestmentPool', function (accounts) {
         returnedFunds.should.be.bignumber.equal(expectedRefund);
     });
     //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#39 service account may execute', async () => {
         const serviceAccount = INVESTORS[0];
@@ -824,7 +855,11 @@ contract('InvestmentPool', function (accounts) {
         //#if D_SOFT_CAP_WEI == 0
         await reach(new BigNumber(100), investmentPool, [INVESTORS[1]]);
         //#else
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
         await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
         //#endif
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: INVESTORS[1] })
@@ -832,4 +867,37 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: serviceAccount });
         await mockContract.isCalledNonPayable().should.eventually.be.true;
     });
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
+
+    it('#40 who can send funds after soft cap', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        //#if defined(D_MIN_VALUE_WEI)
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, [INVESTORS[1]]);
+        //#else
+        await reach(SOFT_CAP_WEI, investmentPool, [INVESTORS[1]]);
+        //#endif
+        //#if D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
+        await investmentPool.finalize({ from: INVESTORS[0] }).should.eventually.be.rejected;
+        await investmentPool.finalize({ from: OWNER });
+        //#else
+        await investmentPool.finalize({ from: INVESTORS[0] });
+        //#endif
+    });
+    //#endif
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_HARD_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
+
+    it('#41 who can send funds after hard cap', async () => {
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        await reach(HARD_CAP_WEI, investmentPool, INVESTORS);
+        //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER
+        await investmentPool.finalize({ from: INVESTORS[0] }).should.eventually.be.rejected;
+        await investmentPool.finalize({ from: OWNER });
+        //#else
+        await investmentPool.finalize({ from: INVESTORS[0] });
+        //#endif
+    });
+    //#endif
 });
