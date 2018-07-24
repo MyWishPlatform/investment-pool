@@ -902,6 +902,23 @@ contract('InvestmentPool', function (accounts) {
     //#endif
 
     it('#43 check transfer from page', async () => {
+        const addresses = Array.from({ length: 102 }, (v, k) => accounts[k + 1]);
+
+        let wei = getSimpleWeiAmount();
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+
+        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        for (let i = 0; i < addresses.length; i++) {
+            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+
+        await investmentPool.finalize({ from: OWNER });
+        const tx = await investmentPool.transferToAddressesFromPage(0, { from: OWNER }).should.be.fulfilled;
+        console.info('Gas used for transfer to 100 addresses: ', tx.receipt.gasUsed);
+    });
+
+    it('#44 if page have less than 100 addresses', async () => {
         const addresses = Array.from({ length: 102 }, (v, k) => accounts[k+1]);
 
         let wei = getSimpleWeiAmount();
@@ -914,13 +931,12 @@ contract('InvestmentPool', function (accounts) {
         }
 
         await investmentPool.finalize({ from: OWNER });
-        const tx = await investmentPool.transferPage(0, {from: OWNER}).should.be.fulfilled;
-        console.info('Gas used for transfer to 100 addresses: ', tx.receipt.gasUsed);
+        const tx = await investmentPool.transferToAddressesFromPage(1, { from: OWNER }).should.be.fulfilled;
+        console.info('Gas used for transfer to 3 addresses: ', tx.receipt.gasUsed);
     });
 
-    it('#44 if page have less than 100 addresses', async () => {
-        const addresses = Array.from({ length: 50 }, (v, k) => accounts[k+1]);
-
+    it('#45 check transfer from non-existed page', async () => {
+        const addresses = Array.from({ length: 20 }, (v, k) => accounts[k + 1]);
         let wei = getSimpleWeiAmount();
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
@@ -929,11 +945,7 @@ contract('InvestmentPool', function (accounts) {
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
         }
-
         await investmentPool.finalize({ from: OWNER });
-        const tx = await investmentPool.transferPage(0, {from: OWNER}).should.be.fulfilled;
-        console.info('Gas used for transfer to 50 addresses: ', tx.receipt.gasUsed);
-
+        await investmentPool.transferToAddressesFromPage(1, { from: OWNER }).should.be.rejected;
     });
-
 });
