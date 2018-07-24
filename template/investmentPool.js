@@ -918,7 +918,7 @@ contract('InvestmentPool', function (accounts) {
         console.info('Gas used for transfer to 100 addresses: ', tx.receipt.gasUsed);
     });
 
-    it('#45 if page have less than 100 addresses', async () => {
+    it('#44 if page have less than 100 addresses', async () => {
         const addresses = Array.from({ length: 50 }, (v, k) => accounts[k+1]);
 
         let wei = getSimpleWeiAmount();
@@ -933,6 +933,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.finalize({ from: OWNER });
         const tx = await investmentPool.transferPage(0, {from: OWNER}).should.be.fulfilled;
         console.info('Gas used for transfer to 50 addresses: ', tx.receipt.gasUsed);
+
     });
 
 });
