@@ -700,7 +700,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.executeAfterFinalize(encode('nonPayableCall()'), { from: OWNER })
             .should.eventually.be.rejected;
     });
-    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
+    //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) &(D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
     it('#33 custom call on crowdsale contract', async () => {
         const investmentPool = await createInvestmentPoolWithToken();
@@ -901,8 +901,8 @@ contract('InvestmentPool', function (accounts) {
     });
     //#endif
 
-    it('#42 check append to investors list', async () => {
-        const addresses = Array.from({ length: 102 }, (v, k) => accounts[k+3]);
+    it('#43 check transfer from page', async () => {
+        const addresses = Array.from({ length: 102 }, (v, k) => accounts[k+1]);
 
         let wei = getSimpleWeiAmount();
         const investmentPool = await createInvestmentPoolWithICOAndToken();
@@ -913,11 +913,26 @@ contract('InvestmentPool', function (accounts) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
         }
 
-        console.log(await investmentPool.investorsCount());
-
-        const gas = await investmentPool.batchList.estimateGas(0);
-        console.log(gas);
-        const list = await investmentPool.batchList(0);
-        console.log(JSON.stringify(list, null, 1));
+        await investmentPool.finalize({ from: OWNER });
+        const tx = await investmentPool.transferPage(0, {from: OWNER}).should.be.fulfilled;
+        console.info('Gas used for transfer to 100 addresses: ', tx.receipt.gasUsed);
     });
+
+    it('#45 if page have less than 100 addresses', async () => {
+        const addresses = Array.from({ length: 50 }, (v, k) => accounts[k+1]);
+
+        let wei = getSimpleWeiAmount();
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+
+        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        for (let i = 0; i < addresses.length; i++) {
+            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+
+        await investmentPool.finalize({ from: OWNER });
+        const tx = await investmentPool.transferPage(0, {from: OWNER}).should.be.fulfilled;
+        console.info('Gas used for transfer to 50 addresses: ', tx.receipt.gasUsed);
+    });
+
 });
