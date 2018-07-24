@@ -900,4 +900,24 @@ contract('InvestmentPool', function (accounts) {
         //#endif
     });
     //#endif
+
+    it('#42 check append to investors list', async () => {
+        const addresses = Array.from({ length: 102 }, (v, k) => accounts[k+3]);
+
+        let wei = getSimpleWeiAmount();
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+
+        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        for (let i = 0; i < addresses.length; i++) {
+            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+
+        console.log(await investmentPool.investorsCount());
+
+        const gas = await investmentPool.batchList.estimateGas(0);
+        console.log(gas);
+        const list = await investmentPool.batchList(0);
+        console.log(JSON.stringify(list, null, 1));
+    });
 });

@@ -3,6 +3,7 @@ pragma solidity ^0.4.23;
 import "./HardCappedInvestmentPool.sol";
 import "./SoftCappedInvestmentPool.sol";
 import "./RefundableInvestmentPool.sol";
+import "./BatchTransferableInvestmentPool.sol";
 //#if D_WHITELIST
 import "./WhitelistedInvestmentPool.sol";
 //#endif
@@ -25,6 +26,7 @@ contract InvestmentPool is // solium-disable-line lbrace
   , HardCappedInvestmentPool
   , CancellableInvestmentPool
   , RefundableInvestmentPool
+  , BatchTransferableInvestmentPool
   //#if D_WHITELIST
   , WhitelistedInvestmentPool
   //#endif

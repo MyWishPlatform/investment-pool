@@ -25,6 +25,15 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
    */
   mapping(address => uint) public investments;
 
+  mapping(address => address) investors;
+
+  uint public investorsCount;
+
+  function _appendInvestor(address _addr) public {
+    investors[_addr] = investors[0x0];
+    investors[0x0] = _addr;
+    investorsCount++;
+  }
   /**
    * @notice all funds will be sent to this address when soft cap will be reached.
    */
@@ -118,7 +127,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   )
     public
   {
-    require(_owner != address(0), "owner address should not be null");
+    require(_owner != address(0), " publicowner address should not be null");
     require(_rewardPermille < 1000, "rate should be less than 1000");
     owner = _owner;
     investmentAddress = _investmentAddress;
@@ -166,6 +175,7 @@ contract BaseInvestmentPool is Ownable, ReentrancyGuard, ERC223Receiver {
   function invest(address _beneficiary) public payable {
     uint amount = msg.value;
     _preValidateInvest(_beneficiary, amount);
+    _appendInvestor(_beneficiary);
     weiRaised = weiRaised.add(amount);
     investments[_beneficiary] = investments[_beneficiary].add(amount);
     emit Invest(_beneficiary, amount);
