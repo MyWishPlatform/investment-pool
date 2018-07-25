@@ -8,7 +8,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
   uint constant BATCH_SIZE = 100;
   address[] public investors;
 
-  function transferToAddressesFromPage(uint _index) external nonReentrant {
+  function batchTransferFromPage(uint _index) external nonReentrant {
     uint indexOffset = _index * BATCH_SIZE;
     require(indexOffset < investors.length);
 
@@ -20,6 +20,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
     uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
     uint tokenAmountMultiplex = tokenRaised.mul(1000 - rewardPermille).div(weiRaised.mul(1000));
 
+    uint batchTokenAmount;
     for (uint i = 0; i < batchLength; i ++) {
       address currentInvestor = investors[i + (indexOffset)];
       uint invested = investments[currentInvestor];
@@ -29,12 +30,13 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
         continue;
       } else {
         ERC20Basic(tokenAddress).transfer(currentInvestor, tokenAmount);
-        tokensWithdrawn += tokenAmount;
+        batchTokenAmount += tokenAmount;
 
         tokensWithdrawnByInvestor[currentInvestor] += tokenAmount;
         emit WithdrawTokens(currentInvestor, tokenAmount);
       }
     }
+    tokensWithdrawn += batchTokenAmount;
   }
 
   function _preValidateInvest(address _beneficiary, uint _amount) internal {

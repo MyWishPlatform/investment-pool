@@ -914,7 +914,7 @@ contract('InvestmentPool', function (accounts) {
         }
 
         await investmentPool.finalize({ from: OWNER });
-        const tx = await investmentPool.transferToAddressesFromPage(0, { from: OWNER }).should.be.fulfilled;
+        const tx = await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
         console.info('Gas used for transfer to 100 addresses: ', tx.receipt.gasUsed);
     });
 
@@ -931,7 +931,7 @@ contract('InvestmentPool', function (accounts) {
         }
 
         await investmentPool.finalize({ from: OWNER });
-        await investmentPool.transferToAddressesFromPage(1, { from: OWNER }).should.be.fulfilled;
+        await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
     });
 
     it('#45 check correct amount transferred to addresses from page', async () => {
@@ -956,7 +956,7 @@ contract('InvestmentPool', function (accounts) {
         const weiRaised = await investmentPool.weiRaised();
         const allTokens = await token.balanceOf(investmentPool.address);
 
-        await investmentPool.transferToAddressesFromPage(0, { from: OWNER }).should.be.fulfilled;
+        await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
 
         for (let i = 0; i < addresses.length; i++) {
             const invested = await investmentPool.investments(addresses[i]);
@@ -983,7 +983,7 @@ contract('InvestmentPool', function (accounts) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
         }
         await investmentPool.finalize({ from: OWNER });
-        await investmentPool.transferToAddressesFromPage(1, { from: OWNER }).should.be.rejected;
+        await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.rejected;
     });
 
     it('#47 if address from page already withdrawed', async () => {
@@ -1000,7 +1000,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.withdrawTokens({ from: accounts[6] });
         const beforeListTransfer = await token.balanceOf(accounts[6]);
-        await investmentPool.transferToAddressesFromPage(0, { from: OWNER });
+        await investmentPool.batchTransferFromPage(0, { from: OWNER });
         await token.balanceOf(accounts[6]).should.eventually.be.bignumber.equal(beforeListTransfer);
     });
 
@@ -1019,7 +1019,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.withdrawTokens({ from: OWNER });
         const beforeListTransfer = await token.balanceOf(OWNER);
-        await investmentPool.transferToAddressesFromPage(0, { from: OWNER });
+        await investmentPool.batchTransferFromPage(0, { from: OWNER });
 
         await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(beforeListTransfer);
         await investmentPool.withdrawTokens({ from: OWNER }).should.eventually.be.rejected;
