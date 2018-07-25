@@ -16,16 +16,23 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
 
     for (uint i = 0; i < page.length; i ++) {
       address currentInvestor = page[i];
-      if (investments[currentInvestor] != 0) {
-        uint tokenAmount = investments[currentInvestor].mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
-
-        require(tokenAmount != 0, "contract have no tokens for you");
-        _transferTokens(currentInvestor, tokenAmount);
+      uint tokenAmount = investments[currentInvestor].mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
+      if (investments[currentInvestor] != 0 && tokenAmount != 0) {
+        super._transferTokens(currentInvestor, tokenAmount);
         tokensWithdrawnByInvestor[currentInvestor] = tokensWithdrawnByInvestor[currentInvestor].add(tokenAmount);
         emit WithdrawTokens(currentInvestor, tokenAmount);
+      } else {
+        continue;
       }
       if (currentInvestor == owner && rewardPermille != 0) {
-        _withdrawOwnerTokens();
+        uint ownerTokenAmount = _getRewardTokenAmount();
+        if (isFinalized && (ownerTokenAmount != 0)) {
+          super._transferTokens(owner, ownerTokenAmount);
+          rewardWithdrawn = rewardWithdrawn.add(ownerTokenAmount);
+          emit WithdrawReward(owner, ownerTokenAmount);
+        } else {
+          continue;
+        }
       }
     }
   }

@@ -919,7 +919,7 @@ contract('InvestmentPool', function (accounts) {
     });
 
     it('#44 if page have less than 100 addresses', async () => {
-        const addresses = Array.from({ length: 102 }, (v, k) => accounts[k+1]);
+        const addresses = Array.from({ length: 102 }, (v, k) => accounts[k++]);
 
         let wei = getSimpleWeiAmount();
         const investmentPool = await createInvestmentPoolWithICOAndToken();
@@ -931,12 +931,54 @@ contract('InvestmentPool', function (accounts) {
         }
 
         await investmentPool.finalize({ from: OWNER });
-        const tx = await investmentPool.transferToAddressesFromPage(1, { from: OWNER }).should.be.fulfilled;
-        console.info('Gas used for transfer to 3 addresses: ', tx.receipt.gasUsed);
+        await investmentPool.transferToAddressesFromPage(1, { from: OWNER }).should.be.fulfilled;
     });
 
-    it('#45 check transfer from non-existed page', async () => {
-        const addresses = Array.from({ length: 20 }, (v, k) => accounts[k + 1]);
+    it('#45 check correct amount transferred to addresses from page', async () => {
+        const addresses = Array.from({ length: 10 }, (v, k) => accounts[k++]);
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const token = Token.at(await investmentPool.tokenAddress());
+        await timeTo(START_TIME);
+        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
+        await reach(SOFT_CAP_WEI.add(MIN_VALUE_WEI), investmentPool, addresses);
+        //#else
+        await reach(SOFT_CAP_WEI, investmentPool, addresses);
+        //#endif
+
+        let wei = getSimpleWeiAmount();
+        for (let i = 0; i < addresses.length; i++) {
+            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+        // finalize
+        await investmentPool.finalize({ from: OWNER });
+
+        //withdraw
+        const weiRaised = await investmentPool.weiRaised();
+        const allTokens = await token.balanceOf(investmentPool.address);
+
+        await investmentPool.transferToAddressesFromPage(0, { from: OWNER }).should.be.fulfilled;
+
+        for (let i = 0; i < addresses.length; i++) {
+            const invested = await investmentPool.investments(addresses[i]);
+            if (invested.comparedTo(0) > 0) {
+                let expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
+                if (addresses[i] === OWNER) {
+                    expectedTokens = expectedTokens.add(getRewardTokenAmount(allTokens));
+                }
+
+                await token.balanceOf(addresses[i]).should.eventually.be.bignumber.equal(expectedTokens);
+                await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
+            } else {
+                if (addresses[i] !== OWNER) {
+                    await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
+                }
+            }
+        }
+    });
+
+
+    it('#46 check transfer from non-existed page', async () => {
+        const addresses = Array.from({ length: 20 }, (v, k) => accounts[k++]);
         let wei = getSimpleWeiAmount();
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
@@ -947,5 +989,44 @@ contract('InvestmentPool', function (accounts) {
         }
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.transferToAddressesFromPage(1, { from: OWNER }).should.be.rejected;
+    });
+
+    it('#47 if address from page already withdrawed', async () => {
+        const addresses = Array.from({ length: 20 }, (v, k) => accounts[k + 1]);
+        let wei = getSimpleWeiAmount();
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const token = Token.at(await investmentPool.tokenAddress());
+        await timeTo(START_TIME);
+
+        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        for (let i = 0; i < addresses.length; i++) {
+            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+        await investmentPool.finalize({ from: OWNER });
+        await investmentPool.withdrawTokens({ from: accounts[6] });
+        const beforeListTransfer = await token.balanceOf(accounts[6]);
+        await investmentPool.transferToAddressesFromPage(0, { from: OWNER });
+        await token.balanceOf(accounts[6]).should.eventually.be.bignumber.equal(beforeListTransfer);
+    });
+
+    it('#48 if owner already withdrawed and claimed reward', async () => {
+        const addresses = Array.from({ length: 5 }, (v, k) => accounts[k++]);
+        let wei = getSimpleWeiAmount();
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const token = Token.at(await investmentPool.tokenAddress());
+        await timeTo(START_TIME);
+
+        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        for (let i = 0; i < addresses.length; i++) {
+            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+
+        await investmentPool.finalize({ from: OWNER });
+        await investmentPool.withdrawTokens({ from: OWNER });
+        const beforeListTransfer = await token.balanceOf(OWNER);
+        await investmentPool.transferToAddressesFromPage(0, { from: OWNER });
+
+        await token.balanceOf(OWNER).should.eventually.be.bignumber.equal(beforeListTransfer);
+        await investmentPool.withdrawTokens({ from: OWNER }).should.eventually.be.rejected;
     });
 });
