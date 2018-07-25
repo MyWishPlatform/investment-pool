@@ -962,13 +962,8 @@ contract('InvestmentPool', function (accounts) {
             const invested = await investmentPool.investments(addresses[i]);
             if (invested.comparedTo(0) > 0) {
                 let expectedTokens = getInvestorTokenAmount(invested, weiRaised, allTokens);
-                if (addresses[i] === OWNER) {
-                    expectedTokens = expectedTokens.add(getRewardTokenAmount(allTokens));
-                }
 
                 await token.balanceOf(addresses[i]).should.eventually.be.bignumber.equal(expectedTokens);
-                await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
-            } else {
                 if (addresses[i] !== OWNER) {
                     await investmentPool.withdrawTokens({ from: addresses[i] }).should.eventually.be.rejected;
                 }

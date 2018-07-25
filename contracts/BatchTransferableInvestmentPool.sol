@@ -5,41 +5,34 @@ import "./BaseInvestmentPool.sol";
 
 contract BatchTransferableInvestmentPool is BaseInvestmentPool {
 
+  uint constant BATCH_SIZE = 100;
   address[] public investors;
 
-  function transferToAddressesFromPage(uint _index) external nonReentrant onlyOwner {
-    require(_index * 100 < investors.length);
+  function transferToAddressesFromPage(uint _index) external nonReentrant {
+    uint indexOffset = _index * BATCH_SIZE;
+    require(indexOffset < investors.length);
 
-    uint batchLength = 100;
-    if (investors.length - _index * 100 < 100) {
-      batchLength = investors.length - _index * 100; 
+    uint batchLength = BATCH_SIZE;
+    if (investors.length - indexOffset < BATCH_SIZE) {
+      batchLength = investors.length - indexOffset;
     }
 
     uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
     uint tokenAmountMultiplex = tokenRaised.mul(1000 - rewardPermille).div(weiRaised.mul(1000));
 
     for (uint i = 0; i < batchLength; i ++) {
-      address currentInvestor = investors[i + (_index * 100)];
-      uint tokenAmount = investments[currentInvestor].mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
-      if (investments[currentInvestor] != 0 && tokenAmount != 0) {
+      address currentInvestor = investors[i + (indexOffset)];
+      uint invested = investments[currentInvestor];
+      uint tokenAmount = invested.mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
+
+      if (invested == 0 && tokenAmount == 0) {
+        continue;
+      } else {
         ERC20Basic(tokenAddress).transfer(currentInvestor, tokenAmount);
         tokensWithdrawn += tokenAmount;
 
         tokensWithdrawnByInvestor[currentInvestor] += tokenAmount;
         emit WithdrawTokens(currentInvestor, tokenAmount);
-
-        if (currentInvestor == owner && rewardPermille != 0) {
-          uint ownerTokenAmount = _getRewardTokenAmount();
-          if (isFinalized && (ownerTokenAmount != 0)) {
-            ERC20Basic(tokenAddress).transfer(owner, ownerTokenAmount);
-            tokensWithdrawn += ownerTokenAmount;
-
-            rewardWithdrawn += ownerTokenAmount;
-            emit WithdrawReward(owner, ownerTokenAmount);
-          }
-        }
-      } else {
-        continue;
       }
     }
   }
