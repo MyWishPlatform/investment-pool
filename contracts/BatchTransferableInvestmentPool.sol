@@ -25,7 +25,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
       uint invested = investments[currentInvestor];
       uint tokenAmount = invested.mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
 
-      if (invested == 0 && tokenAmount == 0) {
+      if (invested == 0 || tokenAmount == 0) {
         continue;
       } else {
         ERC20Basic(tokenAddress).transfer(currentInvestor, tokenAmount);
