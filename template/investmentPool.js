@@ -557,6 +557,7 @@ contract('InvestmentPool', function (accounts) {
     //#endif
     //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
+    /***
     it('#28 check correct withdrawing when owner participated', async () => {
         const addresses = [...INVESTORS, OWNER];
         const investmentPool = await createInvestmentPoolWithICOAndToken();
@@ -592,6 +593,7 @@ contract('InvestmentPool', function (accounts) {
             }
         }
     });
+    ***/
     //#endif
 
     it('#29 decline unknown ERC223 tokens', async () => {
@@ -902,24 +904,37 @@ contract('InvestmentPool', function (accounts) {
     //#endif
     //#if D_AUTO_TRANSFER
 
-    it('#43 check transfer from page', async () => {
+    it('#42 check transfer from page', async () => {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
 
         let wei = SOFT_CAP_WEI.div(60).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = HARD_CAP_WEI.div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
         //#endif
-        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MIN_VALUE_WEI);
+        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
+        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = BigNumber.min(wei, MAX_VALUE_WEI);
+        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(wei, MIN_VALUE_WEI);
         //#endif
+
 
         //#if D_WHITELIST
         await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
+        if (remain.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI)
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
+            //#else
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
+            //#endif
         }
 
         await investmentPool.finalize({ from: OWNER });
@@ -927,31 +942,42 @@ contract('InvestmentPool', function (accounts) {
         console.info('Gas used for transfer to 50 addresses: ', tx.receipt.gasUsed);
     });
 
-    it('#44 if page have less than 50 addresses', async () => {
+    it('#43 if page have less than 50 addresses', async () => {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
 
         let wei = SOFT_CAP_WEI.div(60).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = HARD_CAP_WEI.div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
         //#endif
-        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MIN_VALUE_WEI);
+        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
+        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = BigNumber.min(wei, MAX_VALUE_WEI);
+        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(wei, MIN_VALUE_WEI);
         //#endif
-
         //#if D_WHITELIST
         await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
         }
+        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
+        if (remain.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI)
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
+            //#else
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
+            //#endif
+        }
 
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
     });
 
-    it('#45 check correct amount transferred to addresses from page', async () => {
+    it('#44 check correct amount transferred to addresses from page', async () => {
         const addresses = Array.from({ length: 10 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
@@ -959,17 +985,28 @@ contract('InvestmentPool', function (accounts) {
 
         let wei = SOFT_CAP_WEI.div(60).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = HARD_CAP_WEI.div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
         //#endif
-        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MIN_VALUE_WEI);
+        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
+        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = BigNumber.min(wei, MAX_VALUE_WEI);
+        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(wei, MIN_VALUE_WEI);
         //#endif
-
         //#if D_WHITELIST
         await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
+        if (remain.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI)
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
+            //#else
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
+            //#endif
         }
 
         // finalize
@@ -994,30 +1031,42 @@ contract('InvestmentPool', function (accounts) {
         }
     });
 
-    it('#46 check transfer from non-existed page', async () => {
+    it('#45 check transfer from non-existed page', async () => {
         const addresses = Array.from({ length: 20 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
 
         let wei = SOFT_CAP_WEI.div(60).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = HARD_CAP_WEI.div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
         //#endif
-        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MIN_VALUE_WEI);
+        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
+        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = BigNumber.min(wei, MAX_VALUE_WEI);
+        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(wei, MIN_VALUE_WEI);
         //#endif
-
         //#if D_WHITELIST
         await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
         }
+        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
+        if (remain.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI)
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
+            //#else
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
+            //#endif
+        }
+
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.rejected;
     });
 
-    it('#47 if address from page already withdrawed', async () => {
+    it('#46 if address from page already withdrawed', async () => {
         const addresses = Array.from({ length: 20 }, (v, k) => accounts[k + 1]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
@@ -1025,18 +1074,30 @@ contract('InvestmentPool', function (accounts) {
 
         let wei = SOFT_CAP_WEI.div(60).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = HARD_CAP_WEI.div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
         //#endif
-        //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MIN_VALUE_WEI);
+        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
+        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = BigNumber.min(wei, MAX_VALUE_WEI);
+        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(wei, MIN_VALUE_WEI);
         //#endif
-
         //#if D_WHITELIST
         await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
         }
+        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
+        if (remain.comparedTo(0) > 0) {
+            //#if defined(D_MIN_VALUE_WEI)
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
+            //#else
+            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
+            //#endif
+        }
+
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.withdrawTokens({ from: accounts[6] });
         const beforeListTransfer = await token.balanceOf(accounts[6]);
