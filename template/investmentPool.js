@@ -557,7 +557,6 @@ contract('InvestmentPool', function (accounts) {
     //#endif
     //#if !defined(D_MAX_VALUE_WEI) || ((defined(D_MAX_VALUE_WEI) && (D_SOFT_CAP_WEI/D_MAX_VALUE_WEI) < 1000))
 
-    /***
     it('#28 check correct withdrawing when owner participated', async () => {
         const addresses = [...INVESTORS, OWNER];
         const investmentPool = await createInvestmentPoolWithICOAndToken();
@@ -593,7 +592,6 @@ contract('InvestmentPool', function (accounts) {
             }
         }
     });
-    ***/
     //#endif
 
     it('#29 decline unknown ERC223 tokens', async () => {
@@ -908,10 +906,11 @@ contract('InvestmentPool', function (accounts) {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
+        const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(60).floor();
+        let wei = SOFT_CAP_WEI.div(count).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
         //#endif
         //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
         wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
@@ -928,15 +927,7 @@ contract('InvestmentPool', function (accounts) {
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
         }
-        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remain.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI)
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
-            //#else
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
-            //#endif
-        }
-
+        
         await investmentPool.finalize({ from: OWNER });
         const tx = await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
         console.info('Gas used for transfer to 50 addresses: ', tx.receipt.gasUsed);
@@ -946,10 +937,11 @@ contract('InvestmentPool', function (accounts) {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
+        const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(60).floor();
+        let wei = SOFT_CAP_WEI.div(count).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
         //#endif
         //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
         wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
@@ -963,14 +955,6 @@ contract('InvestmentPool', function (accounts) {
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
-        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remain.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI)
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
-            //#else
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
-            //#endif
         }
 
         await investmentPool.finalize({ from: OWNER });
@@ -982,10 +966,11 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
+        const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(60).floor();
+        let wei = SOFT_CAP_WEI.div(count).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
         //#endif
         //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
         wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
@@ -999,14 +984,6 @@ contract('InvestmentPool', function (accounts) {
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
-        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remain.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI)
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
-            //#else
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
-            //#endif
         }
 
         // finalize
@@ -1035,10 +1012,11 @@ contract('InvestmentPool', function (accounts) {
         const addresses = Array.from({ length: 20 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
+        const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(60).floor();
+        let wei = SOFT_CAP_WEI.div(count).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
         //#endif
         //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
         wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
@@ -1052,14 +1030,6 @@ contract('InvestmentPool', function (accounts) {
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
-        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remain.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI)
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
-            //#else
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
-            //#endif
         }
 
         await investmentPool.finalize({ from: OWNER });
@@ -1071,10 +1041,11 @@ contract('InvestmentPool', function (accounts) {
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
+        const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(60).floor();
+        let wei = SOFT_CAP_WEI.div(count).floor();
         //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(60).floor();
+        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
         //#endif
         //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
         wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
@@ -1088,14 +1059,6 @@ contract('InvestmentPool', function (accounts) {
         //#endif
         for (let i = 0; i < addresses.length; i++) {
             await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
-        const remain = SOFT_CAP_WEI.sub(await investmentPool.weiRaised());
-        if (remain.comparedTo(0) > 0) {
-            //#if defined(D_MIN_VALUE_WEI)
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain.add(MIN_VALUE_WEI) });
-            //#else
-            await investmentPool.sendTransaction({ from: addresses[1], value: remain });
-            //#endif
         }
 
         await investmentPool.finalize({ from: OWNER });
