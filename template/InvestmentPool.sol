@@ -19,6 +19,7 @@ import "./ChangeableTimedInvestmentPool.sol";
 import "./BatchTransferableInvestmentPool.sol";
 //#endif
 
+
 /**
  * @title InvestmentPool
  */

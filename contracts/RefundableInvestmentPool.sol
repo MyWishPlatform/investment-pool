@@ -45,7 +45,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
    * @param _serviceAccount who may execute `executeAfterFinalize` function besides owner.
    *                        If it's 0x0 then only owner may.
    */
-  constructor(address _serviceAccount) {
+  constructor(address _serviceAccount) public {
     serviceAccount = _serviceAccount;
   }
 

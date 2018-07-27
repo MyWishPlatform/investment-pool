@@ -3,8 +3,11 @@ pragma solidity ^0.4.23;
 import "./BaseInvestmentPool.sol";
 
 
+/**
+ * @title BatchTransferableInvestmentPool
+ * @dev The contract extends BaseInvestmentPool and adds possibility of sending tokens to investorsю
+ */
 contract BatchTransferableInvestmentPool is BaseInvestmentPool {
-
   /**
    * @notice number of investors per one transfer transaction.
    */
