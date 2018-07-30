@@ -62,7 +62,7 @@ contract InvestmentPool is // solium-disable-line lbrace
     MaxRestrictedInvestmentPool(D_MAX_VALUE_WEI)
     //#endif
   {
-    require(softCap < hardCap, "soft cap should be less than hard cap");
+    require(softCap <= hardCap, "soft cap should be less than hard cap");
   }
   //#if defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI > 0
 
