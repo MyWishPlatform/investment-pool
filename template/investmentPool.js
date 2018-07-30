@@ -920,7 +920,6 @@ contract('InvestmentPool', function (accounts) {
         //#endif
     });
     //#endif
-    //#if D_AUTO_TRANSFER
 
     it('#42 check transfer from page', async () => {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
@@ -1037,5 +1036,4 @@ contract('InvestmentPool', function (accounts) {
         secondPage.should.be.bignumber.equals(1);
         await investmentPool.batchTransferFromPage(Number(secondPage)).should.be.fulfilled;
     });
-    //#endif
 });
