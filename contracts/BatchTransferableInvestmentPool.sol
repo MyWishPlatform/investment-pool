@@ -21,10 +21,10 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
   /**
    * @notice transfers tokens to multiple investors address.
    *
-   * @param _index number of batch of addresses
+   * @param _index number of page of addresses, starts from 1
    */
   function batchTransferFromPage(uint _index) external nonReentrant {
-    uint indexOffset = _index * BATCH_SIZE;
+    uint indexOffset = (_index - 1) * BATCH_SIZE;
     require(indexOffset < investors.length);
 
     uint batchLength = BATCH_SIZE;
@@ -54,16 +54,26 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
     tokensWithdrawn += batchTokenAmount;
   }
 
+
+  /**
+   * @notice returns number of page (starting from 1), which have unsended investor tokens
+   */
   function getPage() public view returns (uint) {
-      uint firstIndex;
-      for (uint i = 0; i < investors.length; i++) {
-          uint investorAmount = _getInvestorTokenAmount(investors[i]);
-          if (investorAmount != 0) {
-              firstIndex = i;
-              break;
-          }
+    uint firstIndex;
+    bool isIndexAssigned;
+    for (uint i = 0; i < investors.length; i++) {
+      uint investorAmount = _getInvestorTokenAmount(investors[i]);
+      if (investorAmount != 0) {
+        firstIndex = i;
+        isIndexAssigned = true;
+        break;
       }
-      return firstIndex.div(BATCH_SIZE);
+    }
+    if (isIndexAssigned) {
+      return firstIndex.div(BATCH_SIZE) + 1;
+    } else {
+      return firstIndex;
+    }
   }
 
   /**

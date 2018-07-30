@@ -931,7 +931,7 @@ contract('InvestmentPool', function (accounts) {
         await reachAutoTransfer(investmentPool, addresses, count);
         
         await investmentPool.finalize({ from: OWNER });
-        const tx = await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
+        const tx = await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
         console.info('Gas used for transfer to 50 addresses: ', tx.receipt.gasUsed);
     });
 
@@ -944,7 +944,7 @@ contract('InvestmentPool', function (accounts) {
         await reachAutoTransfer(investmentPool, addresses, count);
 
         await investmentPool.finalize({ from: OWNER });
-        await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
+        await investmentPool.batchTransferFromPage(2, { from: OWNER }).should.be.fulfilled;
     });
 
     it('#44 check correct amount transferred to addresses from page', async () => {
@@ -963,7 +963,7 @@ contract('InvestmentPool', function (accounts) {
         const weiRaised = await investmentPool.weiRaised();
         const allTokens = await token.balanceOf(investmentPool.address);
 
-        await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
+        await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
 
         for (let i = 0; i < addresses.length; i++) {
             const invested = await investmentPool.investments(addresses[i]);
@@ -987,7 +987,7 @@ contract('InvestmentPool', function (accounts) {
         await reachAutoTransfer(investmentPool, addresses, count);
 
         await investmentPool.finalize({ from: OWNER });
-        await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.rejected;
+        await investmentPool.batchTransferFromPage(2, { from: OWNER }).should.be.rejected;
     });
 
     it('#46 if address from page already withdrawed', async () => {
@@ -1003,7 +1003,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.withdrawTokens({ from: accounts[6] });
         const beforeListTransfer = await token.balanceOf(accounts[6]);
-        await investmentPool.batchTransferFromPage(0, { from: OWNER });
+        await investmentPool.batchTransferFromPage(1, { from: OWNER });
         await token.balanceOf(accounts[6]).should.eventually.be.bignumber.equal(beforeListTransfer);
     });
 
@@ -1016,9 +1016,9 @@ contract('InvestmentPool', function (accounts) {
         await reachAutoTransfer(investmentPool, addresses, count);
 
         await investmentPool.finalize({ from: OWNER });
-        (await investmentPool.getPage()).should.be.bignumber.equals(0);
-        await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
         (await investmentPool.getPage()).should.be.bignumber.equals(1);
+        await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
+        (await investmentPool.getPage()).should.be.bignumber.equals(2);
     });
     it('#48 check create tx with returned page', async () => {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
@@ -1030,10 +1030,13 @@ contract('InvestmentPool', function (accounts) {
 
         await investmentPool.finalize({ from: OWNER });
         const firstPage = await investmentPool.getPage();
-        firstPage.should.be.bignumber.equals(0);
+        firstPage.should.be.bignumber.equals(1);
+        console.log(firstPage);
         await investmentPool.batchTransferFromPage(Number(firstPage)).should.be.fulfilled;
         const secondPage = await investmentPool.getPage();
-        secondPage.should.be.bignumber.equals(1);
+        secondPage.should.be.bignumber.equals(2);
+        console.log(secondPage);
         await investmentPool.batchTransferFromPage(Number(secondPage)).should.be.fulfilled;
+        console.log(await investmentPool.getPage());
     });
 });
