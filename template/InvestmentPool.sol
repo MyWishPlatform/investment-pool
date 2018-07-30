@@ -16,7 +16,6 @@ import "./MaxRestrictedInvestmentPool.sol";
 //#if D_CAN_CHANGE_TIMES
 import "./ChangeableTimedInvestmentPool.sol";
 //#endif
-import "./BatchTransferableInvestmentPool.sol";
 
 
 /**
