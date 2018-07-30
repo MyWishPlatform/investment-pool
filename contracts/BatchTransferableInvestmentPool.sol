@@ -54,6 +54,18 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
     tokensWithdrawn += batchTokenAmount;
   }
 
+  function getPage() public view returns (uint index) {
+      uint firstIndex;
+      for (uint i = 0; i < investors.length; i++) {
+          uint investorAmount = _getInvestorTokenAmount(investors[i]);
+          if (investorAmount != 0) {
+              firstIndex = i;
+              break;
+          }
+      }
+      return firstIndex.div(BATCH_SIZE);
+  }
+
   /**
    * @notice validates investor's transactions and storing investor's address before adding investor funds
    */

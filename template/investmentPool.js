@@ -119,6 +119,26 @@ contract('InvestmentPool', function (accounts) {
         //#endif
     };
 
+    const reachAutoTransfer = async (investmentPool, addresses, count) => {
+        let wei = SOFT_CAP_WEI.div(count).floor();
+        //#if D_SOFT_CAP_WEI == 0
+        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
+        //#endif
+        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
+        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
+        wei = BigNumber.min(wei, MAX_VALUE_WEI);
+        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
+        wei = BigNumber.max(wei, MIN_VALUE_WEI);
+        //#endif
+        //#if D_WHITELIST
+        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
+        //#endif
+        for (let i = 0; i < addresses.length; i++) {
+            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
+        }
+    }
+
     const encode = web31.eth.abi.encodeFunctionSignature;
 
     beforeEach(async () => {
@@ -908,25 +928,8 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(count).floor();
-        //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
-        //#endif
-        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
-        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MAX_VALUE_WEI);
-        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(wei, MIN_VALUE_WEI);
-        //#endif
 
-
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
-        //#endif
-        for (let i = 0; i < addresses.length; i++) {
-            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
+        await reachAutoTransfer(investmentPool, addresses, count);
         
         await investmentPool.finalize({ from: OWNER });
         const tx = await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
@@ -939,23 +942,7 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(count).floor();
-        //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
-        //#endif
-        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
-        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MAX_VALUE_WEI);
-        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(wei, MIN_VALUE_WEI);
-        //#endif
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
-        //#endif
-        for (let i = 0; i < addresses.length; i++) {
-            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
+        await reachAutoTransfer(investmentPool, addresses, count);
 
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
@@ -968,23 +955,7 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(count).floor();
-        //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
-        //#endif
-        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
-        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MAX_VALUE_WEI);
-        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(wei, MIN_VALUE_WEI);
-        //#endif
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
-        //#endif
-        for (let i = 0; i < addresses.length; i++) {
-            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
+        await reachAutoTransfer(investmentPool, addresses, count);
 
         // finalize
         await investmentPool.finalize({ from: OWNER });
@@ -1014,58 +985,57 @@ contract('InvestmentPool', function (accounts) {
         await timeTo(START_TIME);
         const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(count).floor();
-        //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
-        //#endif
-        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
-        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MAX_VALUE_WEI);
-        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(wei, MIN_VALUE_WEI);
-        //#endif
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
-        //#endif
-        for (let i = 0; i < addresses.length; i++) {
-            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
+        await reachAutoTransfer(investmentPool, addresses, count);
 
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.rejected;
     });
 
     it('#46 if address from page already withdrawed', async () => {
-        const addresses = Array.from({ length: 20 }, (v, k) => accounts[k + 1]);
+        const addresses = Array.from({ length: 20 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         const token = Token.at(await investmentPool.tokenAddress());
         await timeTo(START_TIME);
         const count = addresses.length - 1;
 
-        let wei = SOFT_CAP_WEI.div(count).floor();
-        //#if D_SOFT_CAP_WEI == 0
-        wei = (HARD_CAP_WEI.div(2).floor()).div(count).floor();
-        //#endif
-        //#if defined(D_MAX_VALUE_WEI) && defined(D_MIN_VALUE_WEI) && D_MAX_VALUE_WEI != 0 && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(BigNumber.min(wei, MAX_VALUE_WEI), MIN_VALUE_WEI);
-        //#elif defined(D_MAX_VALUE_WEI) && D_MAX_VALUE_WEI != 0
-        wei = BigNumber.min(wei, MAX_VALUE_WEI);
-        //#elif defined(D_MIN_VALUE_WEI) && D_MIN_VALUE_WEI != 0
-        wei = BigNumber.max(wei, MIN_VALUE_WEI);
-        //#endif
-        //#if D_WHITELIST
-        await investmentPool.addAddressesToWhitelist(addresses, { from: OWNER });
-        //#endif
-        for (let i = 0; i < addresses.length; i++) {
-            await investmentPool.sendTransaction({ from: addresses[i], value: wei });
-        }
+
+        await reachAutoTransfer(investmentPool, addresses, count);
 
         await investmentPool.finalize({ from: OWNER });
         await investmentPool.withdrawTokens({ from: accounts[6] });
         const beforeListTransfer = await token.balanceOf(accounts[6]);
         await investmentPool.batchTransferFromPage(0, { from: OWNER });
         await token.balanceOf(accounts[6]).should.eventually.be.bignumber.equal(beforeListTransfer);
+    });
+
+    it('#47 check get page with non-zero withdraw', async () => {
+        const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        const count = addresses.length - 1;
+
+        await reachAutoTransfer(investmentPool, addresses, count);
+
+        await investmentPool.finalize({ from: OWNER });
+        (await investmentPool.getPage()).should.be.bignumber.equals(0);
+        await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
+        (await investmentPool.getPage()).should.be.bignumber.equals(1);
+    });
+    it('#47 check create tx with returned page', async () => {
+        const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        const count = addresses.length - 1;
+
+        await reachAutoTransfer(investmentPool, addresses, count);
+
+        await investmentPool.finalize({ from: OWNER });
+        const firstPage = await investmentPool.getPage();
+        firstPage.should.be.bignumber.equals(0);
+        await investmentPool.batchTransferFromPage(Number(firstPage)).should.be.fulfilled;
+        const secondPage = await investmentPool.getPage();
+        secondPage.should.be.bignumber.equals(1);
+        await investmentPool.batchTransferFromPage(Number(secondPage)).should.be.fulfilled;
     });
     //#endif
 });
