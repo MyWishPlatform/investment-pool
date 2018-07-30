@@ -1021,7 +1021,7 @@ contract('InvestmentPool', function (accounts) {
         await investmentPool.batchTransferFromPage(0, { from: OWNER }).should.be.fulfilled;
         (await investmentPool.getPage()).should.be.bignumber.equals(1);
     });
-    it('#47 check create tx with returned page', async () => {
+    it('#48 check create tx with returned page', async () => {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
         await timeTo(START_TIME);
