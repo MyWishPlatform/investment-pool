@@ -76,11 +76,7 @@ contract RefundableInvestmentPool is CancellableInvestmentPool, TimedInvestmentP
     require(isFinalized, "contract not finalized yet");
     uint balanceBeforeCall = address(this).balance;
     isRefundMode = true;
-    if (msg.value != 0) {
-      investmentAddress.call.value(msg.value)(_data); // solium-disable-line security/no-call-value
-    } else {
-      investmentAddress.call(_data); // solium-disable-line security/no-low-level-calls
-    }
+    investmentAddress.call.value(msg.value)(_data); // solium-disable-line security/no-call-value
     isRefundMode = false;
     if (address(this).balance > balanceBeforeCall) {
       isInvestmentAddressRefunded = true;

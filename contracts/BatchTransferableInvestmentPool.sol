@@ -5,7 +5,7 @@ import "./BaseInvestmentPool.sol";
 
 /**
  * @title BatchTransferableInvestmentPool
- * @dev The contract extends BaseInvestmentPool and adds possibility of sending tokens to investorsю
+ * @dev The contract extends BaseInvestmentPool and adds possibility of sending tokens to investors.
  */
 contract BatchTransferableInvestmentPool is BaseInvestmentPool {
   /**
