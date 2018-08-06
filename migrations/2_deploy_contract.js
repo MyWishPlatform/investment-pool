@@ -6,3 +6,4 @@ module.exports = function (deployer, network, accounts) {
         .then(crowdsale => crowdsale.token() // eslint-disable-line promise/no-nesting
             .then(tokenAddress => deployer.deploy(InvestmentPool, accounts[0], crowdsale.address, tokenAddress, 0)));
 };
+

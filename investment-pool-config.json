@@ -1,5 +1,5 @@
 {
-  "constants": {
+    "constants": {
     "D_START_TIME": 1507734000,
     "D_END_TIME": 1507820400,
     "D_SOFT_CAP_WEI": "10000000000000000000000000000000",
@@ -11,5 +11,5 @@
     "D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER": true,
     "D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER": true,
     "D_REWARD_PERMILLE": 150
-  }
+    }
 }

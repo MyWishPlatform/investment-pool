@@ -924,12 +924,11 @@ contract('InvestmentPool', function (accounts) {
     it('#42 check transfer from page', async () => {
         const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
         const investmentPool = await createInvestmentPoolWithICOAndToken();
+        (await investmentPool.BATCH_SIZE()).should.be.bignumber.equals(50);
         await timeTo(START_TIME);
         const count = addresses.length - 1;
-
-
         await reachAutoTransfer(investmentPool, addresses, count);
-        
+
         await investmentPool.finalize({ from: OWNER });
         const tx = await investmentPool.batchTransferFromPage(1, { from: OWNER }).should.be.fulfilled;
         console.info('Gas used for transfer to 50 addresses: ', tx.receipt.gasUsed);
@@ -1028,15 +1027,80 @@ contract('InvestmentPool', function (accounts) {
 
         await reachAutoTransfer(investmentPool, addresses, count);
 
+        await reachAutoTransfer(investmentPool, addresses, count);
+
         await investmentPool.finalize({ from: OWNER });
         const firstPage = await investmentPool.getPage();
         firstPage.should.be.bignumber.equals(1);
-        console.log(firstPage);
         await investmentPool.batchTransferFromPage(Number(firstPage)).should.be.fulfilled;
         const secondPage = await investmentPool.getPage();
         secondPage.should.be.bignumber.equals(2);
-        console.log(secondPage);
         await investmentPool.batchTransferFromPage(Number(secondPage)).should.be.fulfilled;
-        console.log(await investmentPool.getPage());
+        (await investmentPool.getPage()).should.be.bignumber.zero;
+    });
+
+    it('#49 returns number of investors', async () => {
+        const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        const count = addresses.length - 1;
+
+        await reachAutoTransfer(investmentPool, addresses, count);
+
+        await investmentPool.finalize({ from: OWNER });
+        const poolCount = await investmentPool.investorsCount();
+        poolCount.should.be.bignumber.equals(addresses.length);
+    });
+
+    it('#50 check remaining tokens and investors on page', async () => {
+        const addresses = Array.from({ length: 60 }, (v, k) => accounts[k++]);
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        const token = Token.at(await investmentPool.tokenAddress());
+        await timeTo(START_TIME);
+        const count = addresses.length - 1;
+
+        await reachAutoTransfer(investmentPool, addresses, count);
+        await investmentPool.finalize({ from: OWNER });
+
+        const page = await investmentPool.getPage();
+        const pageTokens = await investmentPool.pageTokenAmount(page);
+        const remainInvestors = await investmentPool.pageInvestorsRemain(page);
+
+        const weiRaised = await investmentPool.weiRaised();
+        const allTokens = await token.balanceOf(investmentPool.address);
+
+        let investorTokens = 0;
+        for (let i = 0; i < 50; i++) {
+            const invested = await investmentPool.investments(addresses[i]);
+            investorTokens += Number(getInvestorTokenAmount(invested, weiRaised, allTokens));
+        }
+        const calculatedTokens = new BigNumber(investorTokens);
+        pageTokens.should.be.bignumber.at.least(calculatedTokens);
+        remainInvestors.should.be.bignumber.equals(50);
+        await investmentPool.batchTransferFromPage(page).should.be.fulfilled;
+        const updatedTokens = await investmentPool.pageTokenAmount(page);
+        const updatedInvestors = await investmentPool.pageInvestorsRemain(page);
+        updatedTokens.should.be.bignumber.zero;
+        updatedInvestors.should.be.bignumber.zero;
+    });
+
+    it('51 shows correct amount if somebody withdrawed by himself', async () => {
+        const addresses = Array.from({ length: 50 }, (v, k) => accounts[k++]);
+        const investmentPool = await createInvestmentPoolWithICOAndToken();
+        await timeTo(START_TIME);
+        const count = addresses.length - 1;
+
+        await reachAutoTransfer(investmentPool, addresses, count);
+        await investmentPool.finalize({ from: OWNER });
+
+        const page = await investmentPool.getPage();
+        const pageTokens = await investmentPool.pageTokenAmount(page);
+        const remainInvestors = await investmentPool.pageInvestorsRemain(page);
+        await investmentPool.withdrawTokens({ from: getRandom(addresses) }).should.be.fulfilled;
+
+        const updatedTokens = await investmentPool.pageTokenAmount(page);
+        const updatedInvestors = await investmentPool.pageInvestorsRemain(page);
+        updatedTokens.should.be.bignumber.lessThan(pageTokens);
+        updatedInvestors.should.be.bignumber.lessThan(remainInvestors);
     });
 });

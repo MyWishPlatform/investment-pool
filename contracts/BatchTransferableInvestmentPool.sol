@@ -11,7 +11,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
   /**
    * @notice number of investors per one transfer transaction.
    */
-  uint constant BATCH_SIZE = 50;
+  uint public constant BATCH_SIZE = 50;
 
   /**
    * @notice investors which contributed funds and can get tokens.
@@ -73,6 +73,71 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
       return firstIndex.div(BATCH_SIZE) + 1;
     } else {
       return firstIndex;
+    }
+  }
+
+  /**
+   * @notice returns total number of investors, who sended money on contract
+   */
+  function investorsCount() public view returns (uint) {
+    return investors.length;
+  }
+
+  /**
+   * @notice returns rest amount of unreceived tokens on page
+   * @param _index number of page (starting from 1)
+   */
+  function pageTokenAmount(uint _index) public view returns (uint batchTokenAmount) {
+    uint indexOffset = (_index - 1) * BATCH_SIZE;
+    require(indexOffset < investors.length);
+
+    uint batchLength = BATCH_SIZE;
+    if (investors.length - indexOffset < BATCH_SIZE) {
+      batchLength = investors.length - indexOffset;
+    }
+
+    uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
+    uint tokenAmountMultiplex = tokenRaised.mul(1000 - rewardPermille).div(weiRaised.mul(1000));
+
+    for (uint i = 0; i < batchLength; i ++) {
+      address currentInvestor = investors[i + (indexOffset)];
+      uint invested = investments[currentInvestor];
+      uint tokenAmount = invested.mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
+
+      if (invested == 0 || tokenAmount == 0) {
+        continue;
+      } else {
+        batchTokenAmount += tokenAmount;
+      }
+    }
+  }
+
+  /**
+   * @notice returns number of investors that have not received tokens yet
+   * @param _index number of page (starting from 1)
+   */
+  function pageInvestorsRemain(uint _index) public view returns (uint investorsRemain) {
+    uint indexOffset = (_index - 1) * BATCH_SIZE;
+    require(indexOffset < investors.length);
+
+    uint batchLength = BATCH_SIZE;
+    if (investors.length - indexOffset < BATCH_SIZE) {
+      batchLength = investors.length - indexOffset;
+    }
+
+    uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
+    uint tokenAmountMultiplex = tokenRaised.mul(1000 - rewardPermille).div(weiRaised.mul(1000));
+
+    for (uint i = 0; i < batchLength; i ++) {
+      address currentInvestor = investors[i + (indexOffset)];
+      uint invested = investments[currentInvestor];
+      uint tokenAmount = invested.mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
+
+      if (invested == 0 || tokenAmount == 0) {
+        continue;
+      } else {
+         investorsRemain++;
+      }
     }
   }
 
