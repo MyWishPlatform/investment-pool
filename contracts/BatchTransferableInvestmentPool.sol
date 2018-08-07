@@ -24,13 +24,8 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
    * @param _index number of page of addresses, starts from 1
    */
   function batchTransferFromPage(uint _index) external nonReentrant {
-    uint indexOffset = (_index - 1) * BATCH_SIZE;
-    require(indexOffset < investors.length);
-
-    uint batchLength = BATCH_SIZE;
-    if (investors.length - indexOffset < BATCH_SIZE) {
-      batchLength = investors.length - indexOffset;
-    }
+    uint indexOffset = getOffset(_index);
+    uint batchLength = getPageSize(indexOffset);
 
     uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
     uint tokenAmountMultiplex = tokenRaised.mul(1000 - rewardPermille).div(weiRaised.mul(1000));
@@ -53,7 +48,6 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
     }
     tokensWithdrawn += batchTokenAmount;
   }
-
 
   /**
    * @notice returns number of page (starting from 1), which have unsended investor tokens
@@ -88,23 +82,14 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
    * @param _index number of page (starting from 1)
    */
   function pageTokenAmount(uint _index) public view returns (uint batchTokenAmount) {
-    uint indexOffset = (_index - 1) * BATCH_SIZE;
-    require(indexOffset < investors.length);
-
-    uint batchLength = BATCH_SIZE;
-    if (investors.length - indexOffset < BATCH_SIZE) {
-      batchLength = investors.length - indexOffset;
-    }
-
-    uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
-    uint tokenAmountMultiplex = tokenRaised.mul(1000 - rewardPermille).div(weiRaised.mul(1000));
+    uint indexOffset = getOffset(_index);
+    uint batchLength = getPageSize(indexOffset);
 
     for (uint i = 0; i < batchLength; i ++) {
       address currentInvestor = investors[i + (indexOffset)];
-      uint invested = investments[currentInvestor];
-      uint tokenAmount = invested.mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
+      uint tokenAmount = _getInvestorTokenAmount(currentInvestor);
 
-      if (invested == 0 || tokenAmount == 0) {
+      if (tokenAmount == 0) {
         continue;
       } else {
         batchTokenAmount += tokenAmount;
@@ -117,26 +102,17 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
    * @param _index number of page (starting from 1)
    */
   function pageInvestorsRemain(uint _index) public view returns (uint investorsRemain) {
-    uint indexOffset = (_index - 1) * BATCH_SIZE;
-    require(indexOffset < investors.length);
-
-    uint batchLength = BATCH_SIZE;
-    if (investors.length - indexOffset < BATCH_SIZE) {
-      batchLength = investors.length - indexOffset;
-    }
-
-    uint tokenRaised = ERC20Basic(tokenAddress).balanceOf(this).add(tokensWithdrawn);
-    uint tokenAmountMultiplex = tokenRaised.mul(1000 - rewardPermille).div(weiRaised.mul(1000));
+    uint indexOffset = getOffset(_index);
+    uint batchLength = getPageSize(indexOffset);
 
     for (uint i = 0; i < batchLength; i ++) {
       address currentInvestor = investors[i + (indexOffset)];
-      uint invested = investments[currentInvestor];
-      uint tokenAmount = invested.mul(tokenAmountMultiplex).sub(tokensWithdrawnByInvestor[currentInvestor]);
+      uint tokenAmount = _getInvestorTokenAmount(currentInvestor);
 
-      if (invested == 0 || tokenAmount == 0) {
+      if (tokenAmount == 0) {
         continue;
       } else {
-         investorsRemain++;
+        investorsRemain++;
       }
     }
   }
@@ -149,5 +125,26 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
     if (investments[_beneficiary] == 0) {
       investors.push(_beneficiary);
     }
+  }
+
+  /**
+   * @notice returns correct amount of investors if last page filled partially
+   * @param _indexOffset number o
+   */
+  function getPageSize(uint _indexOffset) internal returns (uint batchLength) {
+    if (investors.length - _indexOffset < BATCH_SIZE) {
+      return investors.length - _indexOffset;
+    } else {
+      return BATCH_SIZE;
+    }
+  }
+
+  /**
+   * @notice converts index to offset and validates it
+   * @param _index number of page
+   */
+  function getOffset(uint _index) internal returns (uint indexOffset) {
+    indexOffset = (_index - 1) * BATCH_SIZE;
+    require(indexOffset < investors.length);
   }
 }
