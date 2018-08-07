@@ -21,7 +21,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
   /**
    * @notice transfers tokens to multiple investors address.
    *
-   * @param _index number of page of addresses, starts from 1
+   * @param _index number of page of addresses
    */
   function batchTransferFromPage(uint _index) external nonReentrant {
     uint indexOffset = getOffset(_index);
@@ -50,24 +50,18 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
   }
 
   /**
-   * @notice returns number of page (starting from 1), which have unsended investor tokens
+   * @notice returns number of page, which have unsended investor tokens
    */
   function getPage() public view returns (uint) {
     uint firstIndex;
-    bool isIndexAssigned;
     for (uint i = 0; i < investors.length; i++) {
       uint investorAmount = _getInvestorTokenAmount(investors[i]);
       if (investorAmount != 0) {
         firstIndex = i;
-        isIndexAssigned = true;
         break;
       }
     }
-    if (isIndexAssigned) {
-      return firstIndex.div(BATCH_SIZE) + 1;
-    } else {
-      return firstIndex;
-    }
+    return firstIndex.div(BATCH_SIZE);
   }
 
   /**
@@ -79,7 +73,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
 
   /**
    * @notice returns rest amount of unreceived tokens on page
-   * @param _index number of page (starting from 1)
+   * @param _index number of page
    */
   function pageTokenAmount(uint _index) public view returns (uint batchTokenAmount) {
     uint indexOffset = getOffset(_index);
@@ -99,7 +93,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
 
   /**
    * @notice returns number of investors that have not received tokens yet
-   * @param _index number of page (starting from 1)
+   * @param _index number of
    */
   function pageInvestorsRemain(uint _index) public view returns (uint investorsRemain) {
     uint indexOffset = getOffset(_index);
@@ -129,7 +123,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
 
   /**
    * @notice returns correct amount of investors if last page filled partially
-   * @param _indexOffset number o
+   * @param _indexOffset converted page number
    */
   function getPageSize(uint _indexOffset) internal returns (uint batchLength) {
     if (investors.length - _indexOffset < BATCH_SIZE) {
@@ -144,7 +138,7 @@ contract BatchTransferableInvestmentPool is BaseInvestmentPool {
    * @param _index number of page
    */
   function getOffset(uint _index) internal returns (uint indexOffset) {
-    indexOffset = (_index - 1) * BATCH_SIZE;
+    indexOffset = _index * BATCH_SIZE;
     require(indexOffset < investors.length);
   }
 }
