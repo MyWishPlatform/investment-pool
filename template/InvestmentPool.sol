@@ -70,7 +70,7 @@ contract InvestmentPool is // solium-disable-line lbrace
    * @return is hard cap reached or remains less than MIN_VALUE.
    */
   function hardCapReached() public view returns (bool) {
-    return weiRaised.add(minInvestment) >= hardCap;
+    return weiRaised.add(minInvestment) > hardCap;
   }
   //#endif
   //#if D_CAN_FINALIZE_AFTER_HARD_CAP_ONLY_OWNER || D_CAN_FINALIZE_AFTER_SOFT_CAP_ONLY_OWNER
